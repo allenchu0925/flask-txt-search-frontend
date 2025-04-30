@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統</title>
+    <title>TXT 檔案搜尋系統 v1.0.1</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -67,6 +67,7 @@
             display: flex;
             flex-direction: column;
             background-color: white;
+            position: relative;
         }
         .controls {
             display: flex;
@@ -75,6 +76,10 @@
             background-color: #f0f0f0;
             border-bottom: 1px solid #ccc;
             flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            box-sizing: border-box;
         }
         .status {
             font-size: 14px;
@@ -296,7 +301,6 @@
         let currentFileName = "";
         let selectedItem = null;
         let touchStartX = 0;
-        let touchEndX = 0;
 
         // 定義後端 API 的基礎 URL
         const backendBaseUrl = `https://flask-txt-search.onrender.com`;
@@ -309,6 +313,36 @@
                 timeout = setTimeout(() => func.apply(this, args), wait);
             };
         }
+
+        // 螢幕旋轉時重新計算高度
+        function adjustLayout() {
+            const viewportHeight = window.innerHeight;
+            const resultsSection = document.querySelector('.results-section');
+            const txtContentSection = document.querySelector('.txt-content-section');
+            const txtList = document.querySelector('.txt-list');
+            const txtContent = document.querySelector('.txt-content');
+            const controls = document.querySelector('.controls');
+
+            if (window.innerWidth <= 768) {
+                resultsSection.style.height = `${viewportHeight * 0.5}px`;
+                txtContentSection.style.height = `${viewportHeight * 0.5}px`;
+                txtList.style.maxHeight = `${viewportHeight * 0.5 - 100}px`;
+                const controlsHeight = controls.offsetHeight;
+                txtContent.style.maxHeight = `${viewportHeight * 0.5 - controlsHeight}px`;
+            } else {
+                resultsSection.style.height = 'auto';
+                txtContentSection.style.height = 'auto';
+                txtList.style.maxHeight = 'none';
+                txtContent.style.maxHeight = 'none';
+            }
+        }
+
+        // 初始調整佈局
+        adjustLayout();
+
+        // 監聽螢幕旋轉和視窗大小變化
+        window.addEventListener('resize', adjustLayout);
+        window.addEventListener('orientationchange', adjustLayout);
 
         // Theme Toggle Logic
         const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -387,7 +421,7 @@
             })
             .catch(error => {
                 console.error('搜尋請求失敗:', error);
-                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋失敗，請檢查伺服器是否運行或稍後再試。</p>';
+                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋失敗，後端服務可能正在休眠或無法連線，請稍後再試。</p>';
                 txtContent.innerHTML = '<p style="color: #cc0000;">無法執行搜尋。</p>';
                 status.textContent = '搜尋錯誤';
             });
@@ -437,7 +471,7 @@
                 })
                 .catch(error => {
                     console.error('載入 TXT 內容失敗:', error);
-                    txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容。</p>`;
+                    txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線。</p>`;
                     status.textContent = `載入失敗 (${currentFileName.replace(/\.[^/.]+$/, "")})`;
                     currentHighlights = [];
                     updateStatus();
@@ -500,8 +534,8 @@
                 return fullText;
             }
 
-            const startIndex = Math.max(0, currentSentenceIndex - 40);
-            const endIndex = Math.min(sentences.length, currentSentenceIndex + 41);
+            const startIndex = Math.max(0, currentSentenceIndex - 25);
+            const endIndex = Math.min(sentences.length, currentSentenceIndex + 26);
             return sentences.slice(startIndex, endIndex).join('');
         }
 
@@ -543,20 +577,6 @@
             }
         }, 300));
 
-        // 滑動導航
-        txtContent.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-        });
-
-        txtContent.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            if (touchEndX < touchStartX - 50) {
-                nextButton.click();
-            } else if (touchEndX > touchStartX + 50) {
-                prevButton.click();
-            }
-        });
-
         // 長按複製高亮詞
         txtContent.addEventListener('touchstart', (e) => {
             const target = e.target;
@@ -568,7 +588,7 @@
                     if (textToCopy) {
                         navigator.clipboard.writeText(textToCopy)
                             .then(() => {
-                                alert("已複製高亮詞前後 40 句內容到剪貼版！");
+                                alert("已複製高亮詞前後 25 句內容到剪貼版！");
                             })
                             .catch(err => {
                                 console.error('複製失敗:', err);
@@ -599,7 +619,7 @@
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(textToCopy)
                     .then(() => {
-                        alert("已複製高亮詞前後 40 句內容到剪貼版！");
+                        alert("已複製高亮詞前後 25 句內容到剪貼版！");
                     })
                     .catch(err => {
                         console.error('複製失敗:', err);
@@ -621,7 +641,7 @@
             try {
                 const successful = document.execCommand('copy');
                 if (successful) {
-                    alert("已複製高亮詞前後 40 句內容到剪貼版！");
+                    alert("已複製高亮詞前後 25 句內容到剪貼版！");
                 } else {
                     alert("複製失敗，請手動複製內容。");
                 }

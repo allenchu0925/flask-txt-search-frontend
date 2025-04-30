@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.0.2</title>
+    <title>TXT 檔案搜尋系統 v1.0.1</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -480,7 +480,7 @@
 
         const escapeHTML = (str) => {
             if (typeof str !== 'string') return String(str);
-            const map = { '&': '&', '<': '<', '>': '>', '"': '"', "'": ''' };
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
             return str.replace(/[&<>"']/g, (m) => map[m]);
         };
 
@@ -512,33 +512,31 @@
                 return '';
             }
 
-            // 以換行符分割全文為行
-            const lines = fullText.split('\n').filter(line => line.trim() !== '');
-            if (lines.length === 0) {
+            const sentenceRegex = /[^.!?。？！]+[.!?。？！]?/g;
+            const sentences = fullText.match(sentenceRegex) || [];
+            if (sentences.length === 0) {
                 return fullText;
             }
 
-            // 計算高亮詞所在的行號
             const highlightPos = currentHighlights[currentIndex];
+            let currentSentenceIndex = -1;
             let charCount = 0;
-            let currentLineIndex = -1;
 
-            for (let i = 0; i < lines.length; i++) {
-                if (charCount <= highlightPos && highlightPos < charCount + lines[i].length + 1) {
-                    currentLineIndex = i;
+            for (let i = 0; i < sentences.length; i++) {
+                if (charCount <= highlightPos && highlightPos < charCount + sentences[i].length) {
+                    currentSentenceIndex = i;
                     break;
                 }
-                charCount += lines[i].length + 1; // 加 1 代表換行符
+                charCount += sentences[i].length;
             }
 
-            if (currentLineIndex === -1) {
+            if (currentSentenceIndex === -1) {
                 return fullText;
             }
 
-            // 計算前後 25 行的範圍
-            const startIndex = Math.max(0, currentLineIndex - 25);
-            const endIndex = Math.min(lines.length, currentLineIndex + 26); // +26 包含當前行
-            return lines.slice(startIndex, endIndex).join('\n');
+            const startIndex = Math.max(0, currentSentenceIndex - 25);
+            const endIndex = Math.min(sentences.length, currentSentenceIndex + 26);
+            return sentences.slice(startIndex, endIndex).join('');
         }
 
         prevButton.addEventListener('click', debounce(() => {

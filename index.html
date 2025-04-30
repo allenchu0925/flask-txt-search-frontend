@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.0.4</title>
+    <title>TXT 檔案搜尋系統 v1.0.5</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -372,7 +372,7 @@
             }
         });
 
-        searchButton.addEventListener('click', debounce(() => {
+        searchButton.addEventListener('click', debounce(async () => {
             const input = searchInput.value.trim();
             if (!input) {
                 alert("請輸入要搜尋的文字。");
@@ -390,18 +390,30 @@
             selectedItem = null;
             searchResults = [];
 
-            fetch(`${backendBaseUrl}/search`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ input_text: Blacksmith })
-            })
-            .then(response => {
+            // 設置 fetch 超時
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋超時，後端服務可能正在休眠或無法連線，請稍後再試或喚醒後端服務（訪問 https://flask-txt-search.onrender.com）。</p>';
+                txtContent.innerHTML = '<p style="color: #cc0000;">無法執行搜尋，請檢查後端服務狀態。</p>';
+                status.textContent = '搜尋超時';
+            }, 10000); // 10 秒超時
+
+            try {
+                const response = await fetch(`${backendBaseUrl}/search`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ input_text: input }), // 修正 Blacksmith 為 input
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                return response.json();
-            })
-            .then(data => {
+
+                const data = await response.json();
                 txtList.innerHTML = '';
                 searchResults = data;
 
@@ -420,13 +432,13 @@
                 } else {
                     txtList.innerHTML = `<p style="padding-left: 0; color: #777;">找不到包含 "${escapeHTML(input)}" 的檔案。</p>`;
                 }
-            })
-            .catch(error => {
+            } catch (error) {
+                clearTimeout(timeoutId);
                 console.error('搜尋請求失敗:', error);
                 txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋失敗，後端服務可能正在休眠或無法連線，請稍後再試或喚醒後端服務（訪問 https://flask-txt-search.onrender.com）。</p>';
                 txtContent.innerHTML = '<p style="color: #cc0000;">無法執行搜尋，請檢查後端服務狀態。</p>';
                 status.textContent = '搜尋錯誤';
-            });
+            }
         }, 300));
 
         function selectFile(itemElement, fileName, searchText, fileIndex, initialHighlightIndex) {
@@ -443,8 +455,19 @@
             txtContent.innerHTML = "<p style='color: #777;'>載入中...</p>";
             status.textContent = `載入中... (${currentFileName.replace(/\.[^/.]+$/, "")})`;
 
-            fetch(`${backendBaseUrl}/txt/${fileName}`)
+            // 設置 fetch 超時
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線。</p>`;
+                status.textContent = `載入超時 (${currentFileName.replace(/\.[^/.]+$/, "")})`;
+                currentHighlights = [];
+                updateStatus();
+            }, 10000); // 10 秒超時
+
+            fetch(`${backendBaseUrl}/txt/${fileName}`, { signal: controller.signal })
                 .then(response => {
+                    clearTimeout(timeoutId);
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     return response.json();
                 })
@@ -474,6 +497,7 @@
                     }
                 })
                 .catch(error => {
+                    clearTimeout(timeoutId);
                     console.error('載入 TXT 內容失敗:', error);
                     txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線。</p>`;
                     status.textContent = `載入失敗 (${currentFileName.replace(/\.[^/.]+$/, "")})`;

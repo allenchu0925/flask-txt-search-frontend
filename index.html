@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.0.6</title>
+    <title>TXT 檔案搜尋系統 v1.0.9</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -394,7 +394,7 @@
             const controller = new AbortController();
             const timeoutId = setTimeout(() => {
                 controller.abort();
-                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋超時，後端服務可能正在休眠或無法連線，請稍後再試或喚醒後端服務（訪問 https://flask-txt-search.onrender.com）。</p>';
+                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋超時，後端服務可能正在休眠或無法連線，請<a href="https://flask-txt-search.onrender.com" target="_blank">點擊此處喚醒後端服務</a>，然後重新搜尋。</p>';
                 txtContent.innerHTML = '<p style="color: #cc0000;">無法執行搜尋，請檢查後端服務狀態。</p>';
                 status.textContent = '搜尋超時';
             }, 10000); // 10 秒超時
@@ -435,7 +435,7 @@
             } catch (error) {
                 clearTimeout(timeoutId);
                 console.error('搜尋請求失敗:', error);
-                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋失敗，後端服務可能正在休眠或無法連線，請稍後再試或喚醒後端服務（訪問 https://flask-txt-search.onrender.com）。</p>';
+                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋失敗，後端服務可能正在休眠或無法連線，請<a href="https://flask-txt-search.onrender.com" target="_blank">點擊此處喚醒後端服務</a>，然後重新搜尋。</p>';
                 txtContent.innerHTML = '<p style="color: #cc0000;">無法執行搜尋，請檢查後端服務狀態。</p>';
                 status.textContent = '搜尋錯誤';
             }
@@ -459,7 +459,7 @@
             const controller = new AbortController();
             const timeoutId = setTimeout(() => {
                 controller.abort();
-                txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線。</p>`;
+                txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線，請<a href="https://flask-txt-search.onrender.com" target="_blank">點擊此處喚醒後端服務</a>，然後重新載入。</p>`;
                 status.textContent = `載入超時 (${currentFileName.replace(/\.[^/.]+$/, "")})`;
                 currentHighlights = [];
                 updateStatus();
@@ -499,7 +499,7 @@
                 .catch(error => {
                     clearTimeout(timeoutId);
                     console.error('載入 TXT 內容失敗:', error);
-                    txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線。</p>`;
+                    txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線，請<a href="https://flask-txt-search.onrender.com" target="_blank">點擊此處喚醒後端服務</a>，然後重新載入。</p>`;
                     status.textContent = `載入失敗 (${currentFileName.replace(/\.[^/.]+$/, "")})`;
                     currentHighlights = [];
                     updateStatus();
@@ -582,9 +582,9 @@
                 return fullText;
             }
 
-            // 調整複製範圍為前後 5 句（總共最多 11 句）
-            const startIndex = Math.max(0, currentSentenceIndex - 5);
-            const endIndex = Math.min(sentences.length, currentSentenceIndex + 6); // +6 包含當前句
+            // 調整複製範圍為前後 20 句（總共最多 41 句）
+            const startIndex = Math.max(0, currentSentenceIndex - 20);
+            const endIndex = Math.min(sentences.length, currentSentenceIndex + 21); // +21 包含當前句
             console.log(`複製範圍：從第 ${startIndex} 句到第 ${endIndex} 句`);
             return sentences.slice(startIndex, endIndex).join('\n');
         }
@@ -638,7 +638,7 @@
                     if (textToCopy) {
                         navigator.clipboard.writeText(textToCopy)
                             .then(() => {
-                                alert("已複製高亮詞前後 5 句內容到剪貼版！");
+                                alert("已複製高光詞前後 20 句內容到剪貼版！");
                             })
                             .catch(err => {
                                 console.error('複製失敗:', err);
@@ -669,7 +669,7 @@
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(textToCopy)
                     .then(() => {
-                        alert("已複製高光詞前後 5 句內容到剪貼版！");
+                        alert("已複製高光詞前後 20 句內容到剪貼版！");
                     })
                     .catch(err => {
                         console.error('複製失敗:', err);
@@ -691,7 +691,7 @@
             try {
                 const successful = document.execCommand('copy');
                 if (successful) {
-                    alert("已複製高光詞前後 5 句內容到剪貼版！");
+                    alert("已複製高光詞前後 20 句內容到剪貼版！");
                 } else {
                     alert("複製失敗，請手動複製內容。");
                 }

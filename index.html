@@ -521,3 +521,137 @@
 
             const highlightPos = currentHighlights[currentIndex];
             let currentSentenceIndex = -1;
+            let charCount = 0;
+
+            for (let i = 0; i < sentences.length; i++) {
+                if (charCount <= highlightPos && highlightPos < charCount + sentences[i].length) {
+                    currentSentenceIndex = i;
+                    break;
+                }
+                charCount += sentences[i].length;
+            }
+
+            if (currentSentenceIndex === -1) {
+                return fullText;
+            }
+
+            const startIndex = Math.max(0, currentSentenceIndex - 40);
+            const endIndex = Math.min(sentences.length, currentSentenceIndex + 41);
+            return sentences.slice(startIndex, endIndex).join('');
+        }
+
+        prevButton.addEventListener('click', debounce(() => {
+            if (searchResults.length === 0 || currentFileIndex === -1) {
+                alert("請先執行搜尋並選擇一個檔案。");
+                return;
+            }
+
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateContent(searchInput.value);
+            } else {
+                let prevFileIndex = (currentFileIndex - 1 + searchResults.length) % searchResults.length;
+                let prevFileName = searchResults[prevFileIndex].file_name;
+                const prevFileItem = txtList.querySelector(`div[data-index="${prevFileIndex}"]`);
+                if (prevFileItem) {
+                    selectFile(prevFileItem, prevFileName, searchInput.value, prevFileIndex, 999999);
+                }
+            }
+        }, 300));
+
+        nextButton.addEventListener('click', debounce(() => {
+            if (searchResults.length === 0 || currentFileIndex === -1) {
+                alert("請先執行搜尋並選擇一個檔案。");
+                return;
+            }
+
+            if (currentIndex < currentHighlights.length - 1) {
+                currentIndex++;
+                updateContent(searchInput.value);
+            } else {
+                let nextFileIndex = (currentFileIndex + 1) % searchResults.length;
+                let nextFileName = searchResults[nextFileIndex].file_name;
+                const nextFileItem = txtList.querySelector(`div[data-index="${nextFileIndex}"]`);
+                if (nextFileItem) {
+                    selectFile(nextFileItem, nextFileName, searchInput.value, nextFileIndex, 0);
+                }
+            }
+        }, 300));
+
+        // 長按複製高亮詞
+        txtContent.addEventListener('touchstart', (e) => {
+            const target = e.target;
+            if (target.classList.contains('highlight')) {
+                let touchTimer;
+                touchStartX = e.changedTouches[0].screenX;
+                touchTimer = setTimeout(() => {
+                    const textToCopy = getContextAroundHighlight();
+                    if (textToCopy) {
+                        navigator.clipboard.writeText(textToCopy)
+                            .then(() => {
+                                alert("已複製高亮詞前後 40 句內容到剪貼版！");
+                            })
+                            .catch(err => {
+                                console.error('複製失敗:', err);
+                                alert("複製失敗，請手動複製內容。");
+                            });
+                    }
+                }, 500);
+
+                txtContent.addEventListener('touchend', () => {
+                    clearTimeout(touchTimer);
+                }, { once: true });
+            }
+        });
+
+        // Copy to Clipboard Logic
+        copyButton.addEventListener('click', debounce(() => {
+            if (!fullText) {
+                alert("目前沒有可複製的內容，請先選擇一個檔案。");
+                return;
+            }
+
+            const textToCopy = getContextAroundHighlight();
+            if (!textToCopy) {
+                alert("無法複製內容，請選擇一個包含搜尋結果的檔案。");
+                return;
+            }
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy)
+                    .then(() => {
+                        alert("已複製高亮詞前後 40 句內容到剪貼版！");
+                    })
+                    .catch(err => {
+                        console.error('複製失敗:', err);
+                        fallbackCopy(textToCopy);
+                    });
+            } else {
+                fallbackCopy(textToCopy);
+            }
+        }, 300));
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    alert("已複製高光詞前後 40 句內容到剪貼版！");
+                } else {
+                    alert("複製失敗，請手動複製內容。");
+                }
+            } catch (err) {
+                console.error('Fallback 複製失敗:', err);
+                alert("複製失敗，請手動複製內容。");
+            }
+            document.body.removeChild(textArea);
+        }
+    </script>
+</body>
+</html>

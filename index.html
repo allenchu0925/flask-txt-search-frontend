@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.0.7</title>
+    <title>TXT 檔案搜尋系統 v1.0.8</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -394,7 +394,7 @@
             const controller = new AbortController();
             const timeoutId = setTimeout(() => {
                 controller.abort();
-                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋超時，後端服務可能正在休眠或無法連線，請稍後再試或喚醒後端服務（訪問 https://flask-txt-search.onrender.com）。</p>';
+                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋超時，後端服務可能正在休眠或無法連線，請<a href="https://flask-txt-search.onrender.com" target="_blank">點擊此處喚醒後端服務</a>，然後重新搜尋。</p>';
                 txtContent.innerHTML = '<p style="color: #cc0000;">無法執行搜尋，請檢查後端服務狀態。</p>';
                 status.textContent = '搜尋超時';
             }, 10000); // 10 秒超時
@@ -435,7 +435,7 @@
             } catch (error) {
                 clearTimeout(timeoutId);
                 console.error('搜尋請求失敗:', error);
-                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋失敗，後端服務可能正在休眠或無法連線，請稍後再試或喚醒後端服務（訪問 https://flask-txt-search.onrender.com）。</p>';
+                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋失敗，後端服務可能正在休眠或無法連線，請<a href="https://flask-txt-search.onrender.com" target="_blank">點擊此處喚醒後端服務</a>，然後重新搜尋。</p>';
                 txtContent.innerHTML = '<p style="color: #cc0000;">無法執行搜尋，請檢查後端服務狀態。</p>';
                 status.textContent = '搜尋錯誤';
             }
@@ -459,7 +459,7 @@
             const controller = new AbortController();
             const timeoutId = setTimeout(() => {
                 controller.abort();
-                txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線。</p>`;
+                txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線，請<a href="https://flask-txt-search.onrender.com" target="_blank">點擊此處喚醒後端服務</a>，然後重新載入。</p>`;
                 status.textContent = `載入超時 (${currentFileName.replace(/\.[^/.]+$/, "")})`;
                 currentHighlights = [];
                 updateStatus();
@@ -499,7 +499,7 @@
                 .catch(error => {
                     clearTimeout(timeoutId);
                     console.error('載入 TXT 內容失敗:', error);
-                    txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線。</p>`;
+                    txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線，請<a href="https://flask-txt-search.onrender.com" target="_blank">點擊此處喚醒後端服務</a>，然後重新載入。</p>`;
                     status.textContent = `載入失敗 (${currentFileName.replace(/\.[^/.]+$/, "")})`;
                     currentHighlights = [];
                     updateStatus();
@@ -542,13 +542,14 @@
             }
 
             // 首先按換行符分割段落，然後在每個段落內按句子分割
-            const paragraphs = fullText.split('\n');
+            const paragraphs = fullText.split(/\n+/); // 改進：處理連續換行
             let sentences = [];
             let charCount = 0;
             let sentenceCharPositions = [];
 
             // 遍歷每個段落，將段落按句子分割，並記錄每個句子的起始字符位置
             paragraphs.forEach(paragraph => {
+                if (!paragraph.trim()) return; // 跳過空段落
                 const sentenceRegex = /[^.!?。？！]+[.!?。？！]?/g;
                 let match;
                 while ((match = sentenceRegex.exec(paragraph)) !== null) {

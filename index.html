@@ -75,6 +75,9 @@
             background-color: #f0f0f0;
             border-bottom: 1px solid #ccc;
             flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
         .status {
             font-size: 14px;
@@ -215,6 +218,7 @@
             .txt-content-section {
                 flex: 1;
                 height: 50vh;
+                position: relative;
             }
             .txt-list {
                 max-height: calc(50vh - 100px);
@@ -287,6 +291,7 @@
         const status = document.getElementById('status');
         const searchInput = document.getElementById('searchInput');
         const themeToggle = document.getElementById('themeToggle');
+        const txtContentSection = document.querySelector('.txt-content-section');
 
         let searchResults = [];
         let currentFileIndex = -1;
@@ -309,6 +314,36 @@
                 timeout = setTimeout(() => func.apply(this, args), wait);
             };
         }
+
+        // 螢幕旋轉時重新計算高度
+        function adjustLayout() {
+            const viewportHeight = window.innerHeight;
+            const resultsSection = document.querySelector('.results-section');
+            const txtContentSection = document.querySelector('.txt-content-section');
+            const txtList = document.querySelector('.txt-list');
+            const txtContent = document.querySelector('.txt-content');
+            const controls = document.querySelector('.controls');
+
+            if (window.innerWidth <= 768) {
+                resultsSection.style.height = `${viewportHeight * 0.5}px`;
+                txtContentSection.style.height = `${viewportHeight * 0.5}px`;
+                txtList.style.maxHeight = `${viewportHeight * 0.5 - 100}px`;
+                const controlsHeight = controls.offsetHeight;
+                txtContent.style.maxHeight = `${viewportHeight * 0.5 - controlsHeight}px`;
+            } else {
+                resultsSection.style.height = 'auto';
+                txtContentSection.style.height = 'auto';
+                txtList.style.maxHeight = 'none';
+                txtContent.style.maxHeight = 'none';
+            }
+        }
+
+        // 初始調整佈局
+        adjustLayout();
+
+        // 監聽螢幕旋轉和視窗大小變化
+        window.addEventListener('resize', adjustLayout);
+        window.addEventListener('orientationchange', adjustLayout);
 
         // Theme Toggle Logic
         const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -621,7 +656,7 @@
             try {
                 const successful = document.execCommand('copy');
                 if (successful) {
-                    alert("已複製高亮詞前後 40 句內容到剪貼版！");
+                    alert("已複製高光詞前後 40 句內容到剪貼版！");
                 } else {
                     alert("複製失敗，請手動複製內容。");
                 }

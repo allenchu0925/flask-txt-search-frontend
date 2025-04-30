@@ -67,6 +67,7 @@
             display: flex;
             flex-direction: column;
             background-color: white;
+            position: relative;
         }
         .controls {
             display: flex;
@@ -75,9 +76,11 @@
             background-color: #f0f0f0;
             border-bottom: 1px solid #ccc;
             flex-shrink: 0;
-            position: sticky;
+            position: fixed;
+            width: 100%;
             top: 0;
             z-index: 1;
+            box-sizing: border-box;
         }
         .status {
             font-size: 14px;
@@ -218,13 +221,15 @@
             .txt-content-section {
                 flex: 1;
                 height: 50vh;
-                position: relative;
             }
             .txt-list {
                 max-height: calc(50vh - 100px);
             }
+            .controls {
+                width: calc(100% - 40px);
+            }
             .txt-content {
-                max-height: calc(50vh - 60px);
+                padding-top: 60px; /* 確保內容不被 controls 覆蓋 */
             }
             .input-section input {
                 font-size: 16px;
@@ -329,12 +334,18 @@
                 txtList.style.maxHeight = `${viewportHeight * 0.5 - 100}px`;
                 const controlsHeight = controls.offsetHeight;
                 txtContent.style.maxHeight = `${viewportHeight * 0.5 - controlsHeight}px`;
+                txtContent.style.paddingTop = `${controlsHeight + 20}px`; // 動態調整 padding-top
             } else {
                 resultsSection.style.height = 'auto';
                 txtContentSection.style.height = 'auto';
                 txtList.style.maxHeight = 'none';
                 txtContent.style.maxHeight = 'none';
+                txtContent.style.paddingTop = '20px';
             }
+
+            // 調整 controls 的寬度以適應 txt-content-section
+            const sectionWidth = txtContentSection.offsetWidth;
+            controls.style.width = `${sectionWidth}px`;
         }
 
         // 初始調整佈局
@@ -380,7 +391,7 @@
             }
 
             txtList.innerHTML = '<p style="padding-left: 0; color: #777;"><span class="loading-spinner"></span>搜尋中...（可能需要幾秒，請稍候）</p>';
-            txtContent.innerHTML = '<p style="color: #777;">請選擇左側的 TXT 檔案以顯示內容</p>';
+            txtContent.innerHTML = '<p style perten="color: #777;">請選擇左側的 TXT 檔案以顯示內容</p>';
             status.textContent = '-/- (檔名)';
             currentFileIndex = -1;
             currentHighlights = [];
@@ -571,7 +582,6 @@
                 let nextFileIndex = (currentFileIndex + 1) % searchResults.length;
                 let nextFileName = searchResults[nextFileIndex].file_name;
                 const nextFileItem = txtList.querySelector(`div[data-index="${nextFileIndex}"]`);
-                if (nextFileItem_cw_idt_downgrade_artifact_2025_04_30_15_24_21_0000.txt
                 if (nextFileItem) {
                     selectFile(nextFileItem, nextFileName, searchInput.value, nextFileIndex, 0);
                 }

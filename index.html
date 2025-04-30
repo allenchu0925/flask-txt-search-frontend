@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.0.6</title>
+    <title>TXT 檔案搜尋系統 v1.0.7</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -508,7 +508,7 @@
 
         const escapeHTML = (str) => {
             if (typeof str !== 'string') return String(str);
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            const map = { '&': '&', '<': '<', '>': '>', '"': '"', "'": ''' };
             return str.replace(/[&<>"']/g, (m) => map[m]);
         };
 
@@ -582,9 +582,9 @@
                 return fullText;
             }
 
-            // 調整複製範圍為前後 5 句（總共最多 11 句）
-            const startIndex = Math.max(0, currentSentenceIndex - 5);
-            const endIndex = Math.min(sentences.length, currentSentenceIndex + 6); // +6 包含當前句
+            // 調整複製範圍為前後 20 句（總共最多 41 句）
+            const startIndex = Math.max(0, currentSentenceIndex - 20);
+            const endIndex = Math.min(sentences.length, currentSentenceIndex + 21); // +21 包含當前句
             console.log(`複製範圍：從第 ${startIndex} 句到第 ${endIndex} 句`);
             return sentences.slice(startIndex, endIndex).join('\n');
         }
@@ -638,7 +638,7 @@
                     if (textToCopy) {
                         navigator.clipboard.writeText(textToCopy)
                             .then(() => {
-                                alert("已複製高亮詞前後 5 句內容到剪貼版！");
+                                alert("已複製高光詞前後 20 句內容到剪貼版！");
                             })
                             .catch(err => {
                                 console.error('複製失敗:', err);
@@ -669,7 +669,7 @@
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(textToCopy)
                     .then(() => {
-                        alert("已複製高光詞前後 5 句內容到剪貼版！");
+                        alert("已複製高光詞前後 20 句內容到剪貼版！");
                     })
                     .catch(err => {
                         console.error('複製失敗:', err);
@@ -691,7 +691,7 @@
             try {
                 const successful = document.execCommand('copy');
                 if (successful) {
-                    alert("已複製高光詞前後 5 句內容到剪貼版！");
+                    alert("已複製高光詞前後 20 句內容到剪貼版！");
                 } else {
                     alert("複製失敗，請手動複製內容。");
                 }

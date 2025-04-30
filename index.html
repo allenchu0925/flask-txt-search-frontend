@@ -67,7 +67,6 @@
             display: flex;
             flex-direction: column;
             background-color: white;
-            position: relative;
         }
         .controls {
             display: flex;
@@ -76,11 +75,9 @@
             background-color: #f0f0f0;
             border-bottom: 1px solid #ccc;
             flex-shrink: 0;
-            position: fixed;
-            width: 100%;
+            position: sticky;
             top: 0;
             z-index: 1;
-            box-sizing: border-box;
         }
         .status {
             font-size: 14px;
@@ -225,11 +222,8 @@
             .txt-list {
                 max-height: calc(50vh - 100px);
             }
-            .controls {
-                width: calc(100% - 40px);
-            }
             .txt-content {
-                padding-top: 60px; /* 確保內容不被 controls 覆蓋 */
+                max-height: calc(50vh - 60px);
             }
             .input-section input {
                 font-size: 16px;
@@ -334,18 +328,12 @@
                 txtList.style.maxHeight = `${viewportHeight * 0.5 - 100}px`;
                 const controlsHeight = controls.offsetHeight;
                 txtContent.style.maxHeight = `${viewportHeight * 0.5 - controlsHeight}px`;
-                txtContent.style.paddingTop = `${controlsHeight + 20}px`; // 動態調整 padding-top
             } else {
                 resultsSection.style.height = 'auto';
                 txtContentSection.style.height = 'auto';
                 txtList.style.maxHeight = 'none';
                 txtContent.style.maxHeight = 'none';
-                txtContent.style.paddingTop = '20px';
             }
-
-            // 調整 controls 的寬度以適應 txt-content-section
-            const sectionWidth = txtContentSection.offsetWidth;
-            controls.style.width = `${sectionWidth}px`;
         }
 
         // 初始調整佈局
@@ -391,7 +379,7 @@
             }
 
             txtList.innerHTML = '<p style="padding-left: 0; color: #777;"><span class="loading-spinner"></span>搜尋中...（可能需要幾秒，請稍候）</p>';
-            txtContent.innerHTML = '<p style perten="color: #777;">請選擇左側的 TXT 檔案以顯示內容</p>';
+            txtContent.innerHTML = '<p style="color: #777;">請選擇左側的 TXT 檔案以顯示內容</p>';
             status.textContent = '-/- (檔名)';
             currentFileIndex = -1;
             currentHighlights = [];
@@ -407,7 +395,9 @@
                 body: JSON.stringify({ input_text: input })
             })
             .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 return response.json();
             })
             .then(data => {
@@ -432,7 +422,7 @@
             })
             .catch(error => {
                 console.error('搜尋請求失敗:', error);
-                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋失敗，請檢查伺服器是否運行或稍後再試。</p>';
+                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋失敗，後端服務可能正在休眠或無法連線，請稍後再試。</p>';
                 txtContent.innerHTML = '<p style="color: #cc0000;">無法執行搜尋。</p>';
                 status.textContent = '搜尋錯誤';
             });
@@ -482,7 +472,7 @@
                 })
                 .catch(error => {
                     console.error('載入 TXT 內容失敗:', error);
-                    txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容。</p>`;
+                    txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線。</p>`;
                     status.textContent = `載入失敗 (${currentFileName.replace(/\.[^/.]+$/, "")})`;
                     currentHighlights = [];
                     updateStatus();
@@ -531,137 +521,3 @@
 
             const highlightPos = currentHighlights[currentIndex];
             let currentSentenceIndex = -1;
-            let charCount = 0;
-
-            for (let i = 0; i < sentences.length; i++) {
-                if (charCount <= highlightPos && highlightPos < charCount + sentences[i].length) {
-                    currentSentenceIndex = i;
-                    break;
-                }
-                charCount += sentences[i].length;
-            }
-
-            if (currentSentenceIndex === -1) {
-                return fullText;
-            }
-
-            const startIndex = Math.max(0, currentSentenceIndex - 40);
-            const endIndex = Math.min(sentences.length, currentSentenceIndex + 41);
-            return sentences.slice(startIndex, endIndex).join('');
-        }
-
-        prevButton.addEventListener('click', debounce(() => {
-            if (searchResults.length === 0 || currentFileIndex === -1) {
-                alert("請先執行搜尋並選擇一個檔案。");
-                return;
-            }
-
-            if (currentIndex > 0) {
-                currentIndex--;
-                updateContent(searchInput.value);
-            } else {
-                let prevFileIndex = (currentFileIndex - 1 + searchResults.length) % searchResults.length;
-                let prevFileName = searchResults[prevFileIndex].file_name;
-                const prevFileItem = txtList.querySelector(`div[data-index="${prevFileIndex}"]`);
-                if (prevFileItem) {
-                    selectFile(prevFileItem, prevFileName, searchInput.value, prevFileIndex, 999999);
-                }
-            }
-        }, 300));
-
-        nextButton.addEventListener('click', debounce(() => {
-            if (searchResults.length === 0 || currentFileIndex === -1) {
-                alert("請先執行搜尋並選擇一個檔案。");
-                return;
-            }
-
-            if (currentIndex < currentHighlights.length - 1) {
-                currentIndex++;
-                updateContent(searchInput.value);
-            } else {
-                let nextFileIndex = (currentFileIndex + 1) % searchResults.length;
-                let nextFileName = searchResults[nextFileIndex].file_name;
-                const nextFileItem = txtList.querySelector(`div[data-index="${nextFileIndex}"]`);
-                if (nextFileItem) {
-                    selectFile(nextFileItem, nextFileName, searchInput.value, nextFileIndex, 0);
-                }
-            }
-        }, 300));
-
-        // 長按複製高亮詞
-        txtContent.addEventListener('touchstart', (e) => {
-            const target = e.target;
-            if (target.classList.contains('highlight')) {
-                let touchTimer;
-                touchStartX = e.changedTouches[0].screenX;
-                touchTimer = setTimeout(() => {
-                    const textToCopy = getContextAroundHighlight();
-                    if (textToCopy) {
-                        navigator.clipboard.writeText(textToCopy)
-                            .then(() => {
-                                alert("已複製高亮詞前後 40 句內容到剪貼版！");
-                            })
-                            .catch(err => {
-                                console.error('複製失敗:', err);
-                                alert("複製失敗，請手動複製內容。");
-                            });
-                    }
-                }, 500);
-
-                txtContent.addEventListener('touchend', () => {
-                    clearTimeout(touchTimer);
-                }, { once: true });
-            }
-        });
-
-        // Copy to Clipboard Logic
-        copyButton.addEventListener('click', debounce(() => {
-            if (!fullText) {
-                alert("目前沒有可複製的內容，請先選擇一個檔案。");
-                return;
-            }
-
-            const textToCopy = getContextAroundHighlight();
-            if (!textToCopy) {
-                alert("無法複製內容，請選擇一個包含搜尋結果的檔案。");
-                return;
-            }
-
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(textToCopy)
-                    .then(() => {
-                        alert("已複製高亮詞前後 40 句內容到剪貼版！");
-                    })
-                    .catch(err => {
-                        console.error('複製失敗:', err);
-                        fallbackCopy(textToCopy);
-                    });
-            } else {
-                fallbackCopy(textToCopy);
-            }
-        }, 300));
-
-        function fallbackCopy(text) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.opacity = '0';
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                const successful = document.execCommand('copy');
-                if (successful) {
-                    alert("已複製高光詞前後 40 句內容到剪貼版！");
-                } else {
-                    alert("複製失敗，請手動複製內容。");
-                }
-            } catch (err) {
-                console.error('Fallback 複製失敗:', err);
-                alert("複製失敗，請手動複製內容。");
-            }
-            document.body.removeChild(textArea);
-        }
-    </script>
-</body>
-</html>

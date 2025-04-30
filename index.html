@@ -1,656 +1,666 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.0.1</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f9f9f9;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        main {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-        .results-section {
-            flex: 1;
-            max-width: 25%;
-            border-right: 1px solid #ccc;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .input-section {
-            padding: 20px;
-            border-bottom: 1px solid #ccc;
-            flex-shrink: 0;
-        }
-        .input-section input {
-            padding: 8px;
-            width: 100%;
-            margin-bottom: 10px;
-            box-sizing: border-box;
-        }
-        .input-section .button-group {
-            display: flex;
-            gap: 10px;
-        }
-        .input-section button {
-            padding: 8px 15px;
-            cursor: pointer;
-        }
-        .input-section #themeToggle {
-            background-color: #0078d7;
-            color: white;
-            border: none;
-            border-radius: 3px;
-        }
-        .input-section #themeToggle:hover {
-            background-color: #005a9e;
-        }
-        .txt-list {
-            overflow-y: auto;
-            flex-grow: 1;
-            padding: 10px 0px 10px 20px;
-        }
-        .txt-content-section {
-            flex: 3;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            background-color: white;
-            position: relative;
-        }
-        .controls {
-            display: flex;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: #f0f0f0;
-            border-bottom: 1px solid #ccc;
-            flex-shrink: 0;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-            box-sizing: border-box;
-        }
-        .status {
-            font-size: 14px;
-            color: #333;
-            margin-left: 20px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .controls button {
-            padding: 8px 15px;
-            color: white;
-            background-color: #0078d7;
-            border: none;
-            cursor: pointer;
-            margin-right: 10px;
-            border-radius: 3px;
-        }
-        .controls button:hover {
-            background-color: #005a9e;
-        }
-        .txt-content {
-            flex: 1;
-            padding: 20px;
-            background-color: white;
-            overflow-y: auto;
-            font-size: 16px;
-            line-height: 1.6;
-            transition: background-color 0.3s;
-            white-space: pre-wrap;
-        }
-        .highlight {
-            background-color: yellow;
-            padding: 0px 2px;
-            border-radius: 2px;
-        }
-        .highlight.focused {
-            background-color: #ffeb3b;
-            font-weight: bold;
-        }
-        .txt-list div {
-            padding: 10px 15px 10px 0px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            transition: background-color 0.2s;
-        }
-        .txt-list div:last-child {
-            border-bottom: none;
-        }
-        .txt-list div:hover {
-            background-color: #e6f2ff;
-        }
-        .txt-list div:active {
-            background-color: #d1eaff;
-        }
-        .txt-list div.selected {
-            background-color: #add8e6;
-            font-weight: bold;
-            color: #005a9e;
-        }
-        .controls button:active,
-        .input-section button:active {
-            background-color: #003087;
-        }
-        /* Dark Mode Styles */
-        body.dark-mode {
-            background-color: #1a1a1a;
-            color: #ffffff;
-        }
-        body.dark-mode .results-section {
-            border-right: 1px solid #444;
-        }
-        body.dark-mode .input-section {
-            border-bottom: 1px solid #444;
-        }
-        body.dark-mode .txt-content-section {
-            background-color: #2d2d2d;
-        }
-        body.dark-mode .txt-content {
-            background-color: #2d2d2d;
-        }
-        body.dark-mode .controls {
-            background-color: #333;
-            border-bottom: 1px solid #444;
-        }
-        body.dark-mode .status {
-            color: #ccc;
-        }
-        body.dark-mode .txt-list div {
-            border-bottom: 1px solid #444;
-        }
-        body.dark-mode .txt-list div:hover {
-            background-color: #3a3a3a;
-        }
-        body.dark-mode .txt-list div:active {
-            background-color: #555;
-        }
-        body.dark-mode .txt-list div.selected {
-            background-color: #4682b4;
-            color: #ffffff;
-        }
-        body.dark-mode .highlight {
-            background-color: #666600;
-        }
-        body.dark-mode .highlight.focused {
-            background-color: #999900;
-        }
-        /* Loading Spinner */
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .loading-spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid #ccc;
-            border-top: 2px solid #0078d7;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 5px;
-            vertical-align: middle;
-        }
-        /* Mobile Styles */
-        @media (max-width: 768px) {
-            main {
-                flex-direction: column;
-            }
-            .results-section {
-                max-width: 100%;
-                border-right: none;
-                border-bottom: 1px solid #ccc;
-                height: 50vh;
-            }
-            .txt-content-section {
-                flex: 1;
-                height: 50vh;
-            }
-            .txt-list {
-                max-height: calc(50vh - 100px);
-            }
-            .txt-content {
-                max-height: calc(50vh - 60px);
-            }
-            .input-section input {
-                font-size: 16px;
-                padding: 10px;
-            }
-            .input-section button {
-                font-size: 16px;
-                padding: 10px 20px;
-            }
-            .controls button {
-                font-size: 16px;
-                padding: 10px 20px;
-            }
-            .txt-list div {
-                font-size: 16px;
-                padding: 15px 10px 15px 0px;
-            }
-            .txt-content {
-                font-size: 16px;
-            }
-            .status {
-                font-size: 14px;
-            }
-            #copyButton {
-                display: none;
-            }
-        }
-    </style>
-</head>
-<body>
-    <main>
-        <section class="results-section">
-            <div class="input-section">
-                <input type="text" id="searchInput" placeholder="輸入文字，例如: 意識流">
-                <div class="button-group">
-                    <button id="searchButton">確定</button>
-                    <button id="themeToggle">深色模式</button>
-                </div>
-            </div>
-            <div class="txt-list" id="txtList">
-                <p style="padding-left: 0; color: #777;">請輸入文字後按確定進行搜尋。</p>
-            </div>
-        </section>
-        <section class="txt-content-section">
-            <div class="controls">
-                <button id="prevButton">向前</button>
-                <button id="nextButton">向後</button>
-                <button id="copyButton">複製內容</button>
-                <span class="status" id="status">-/- (檔名)</span>
-            </div>
-            <div class="txt-content" id="txtContent">
-                <p style="color: #777;">請選擇左側的 TXT 檔案以顯示內容</p>
-            </div>
-        </section>
-    </main>
+   <html lang="zh-Hant">
+   <head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>TXT 檔案搜尋系統 v1.0.3</title>
+       <style>
+           body {
+               font-family: Arial, sans-serif;
+               margin: 0;
+               padding: 0;
+               background-color: #f9f9f9;
+               height: 100vh;
+               display: flex;
+               flex-direction: column;
+               transition: background-color 0.3s, color 0.3s;
+           }
+           main {
+               display: flex;
+               flex: 1;
+               overflow: hidden;
+           }
+           .results-section {
+               flex: 1;
+               max-width: 25%;
+               border-right: 1px solid #ccc;
+               display: flex;
+               flex-direction: column;
+               overflow: hidden;
+           }
+           .input-section {
+               padding: 20px;
+               border-bottom: 1px solid #ccc;
+               flex-shrink: 0;
+           }
+           .input-section input {
+               padding: 8px;
+               width: 100%;
+               margin-bottom: 10px;
+               box-sizing: border-box;
+           }
+           .input-section .button-group {
+               display: flex;
+               gap: 10px;
+           }
+           .input-section button {
+               padding: 8px 15px;
+               cursor: pointer;
+           }
+           .input-section #themeToggle {
+               background-color: #0078d7;
+               color: white;
+               border: none;
+               border-radius: 3px;
+           }
+           .input-section #themeToggle:hover {
+               background-color: #005a9e;
+           }
+           .txt-list {
+               overflow-y: auto;
+               flex-grow: 1;
+               padding: 10px 0px 10px 20px;
+           }
+           .txt-content-section {
+               flex: 3;
+               overflow: hidden;
+               display: flex;
+               flex-direction: column;
+               background-color: white;
+               position: relative;
+           }
+           .controls {
+               display: flex;
+               align-items: center;
+               padding: 10px 20px;
+               background-color: #f0f0f0;
+               border-bottom: 1px solid #ccc;
+               flex-shrink: 0;
+               position: sticky;
+               top: 0;
+               z-index: 1;
+               box-sizing: border-box;
+           }
+           .status {
+               font-size: 14px;
+               color: #333;
+               margin-left: 20px;
+               white-space: nowrap;
+               overflow: hidden;
+               text-overflow: ellipsis;
+           }
+           .controls button {
+               padding: 8px 15px;
+               color: white;
+               background-color: #0078d7;
+               border: none;
+               cursor: pointer;
+               margin-right: 10px;
+               border-radius: 3px;
+           }
+           .controls button:hover {
+               background-color: #005a9e;
+           }
+           .txt-content {
+               flex: 1;
+               padding: 20px;
+               background-color: white;
+               overflow-y: auto;
+               font-size: 16px;
+               line-height: 1.6;
+               transition: background-color 0.3s;
+               white-space: pre-wrap;
+           }
+           .highlight {
+               background-color: yellow;
+               padding: 0px 2px;
+               border-radius: 2px;
+           }
+           .highlight.focused {
+               background-color: #ffeb3b;
+               font-weight: bold;
+           }
+           .txt-list div {
+               padding: 10px 15px 10px 0px;
+               cursor: pointer;
+               border-bottom: 1px solid #eee;
+               white-space: nowrap;
+               overflow: hidden;
+               text-overflow: ellipsis;
+               transition: background-color 0.2s;
+           }
+           .txt-list div:last-child {
+               border-bottom: none;
+           }
+           .txt-list div:hover {
+               background-color: #e6f2ff;
+           }
+           .txt-list div:active {
+               background-color: #d1eaff;
+           }
+           .txt-list div.selected {
+               background-color: #add8e6;
+               font-weight: bold;
+               color: #005a9e;
+           }
+           .controls button:active,
+           .input-section button:active {
+               background-color: #003087;
+           }
+           /* Dark Mode Styles */
+           body.dark-mode {
+               background-color: #1a1a1a;
+               color: #ffffff;
+           }
+           body.dark-mode .results-section {
+               border-right: 1px solid #444;
+           }
+           body.dark-mode .input-section {
+               border-bottom: 1px solid #444;
+           }
+           body.dark-mode .txt-content-section {
+               background-color: #2d2d2d;
+           }
+           body.dark-mode .txt-content {
+               background-color: #2d2d2d;
+           }
+           body.dark-mode .controls {
+               background-color: #333;
+               border-bottom: 1px solid #444;
+           }
+           body.dark-mode .status {
+               color: #ccc;
+           }
+           body.dark-mode .txt-list div {
+               border-bottom: 1px solid #444;
+           }
+           body.dark-mode .txt-list div:hover {
+               background-color: #3a3a3a;
+           }
+           body.dark-mode .txt-list div:active {
+               background-color: #555;
+           }
+           body.dark-mode .txt-list div.selected {
+               background-color: #4682b4;
+               color: #ffffff;
+           }
+           body.dark-mode .highlight {
+               background-color: #666600;
+           }
+           body.dark-mode .highlight.focused {
+               background-color: #999900;
+           }
+           /* Loading Spinner */
+           @keyframes spin {
+               0% { transform: rotate(0deg); }
+               100% { transform: rotate(360deg); }
+           }
+           .loading-spinner {
+               display: inline-block;
+               width: 16px;
+               height: 16px;
+               border: 2px solid #ccc;
+               border-top: 2px solid #0078d7;
+               border-radius: 50%;
+               animation: spin 1s linear infinite;
+               margin-right: 5px;
+               vertical-align: middle;
+           }
+           /* Mobile Styles */
+           @media (max-width: 768px) {
+               main {
+                   flex-direction: column;
+               }
+               .results-section {
+                   max-width: 100%;
+                   border-right: none;
+                   border-bottom: 1px solid #ccc;
+                   height: 50vh;
+               }
+               .txt-content-section {
+                   flex: 1;
+                   height: 50vh;
+               }
+               .txt-list {
+                   max-height: calc(50vh - 100px);
+               }
+               .txt-content {
+                   max-height: calc(50vh - 60px);
+               }
+               .input-section input {
+                   font-size: 16px;
+                   padding: 10px;
+               }
+               .input-section button {
+                   font-size: 16px;
+                   padding: 10px 20px;
+               }
+               .controls button {
+                   font-size: 16px;
+                   padding: 10px 20px;
+               }
+               .txt-list div {
+                   font-size: 16px;
+                   padding: 15px 10px 15px 0px;
+               }
+               .txt-content {
+                   font-size: 16px;
+               }
+               .status {
+                   font-size: 14px;
+               }
+               #copyButton {
+                   display: none;
+               }
+           }
+       </style>
+   </head>
+   <body>
+       <main>
+           <section class="results-section">
+               <div class="input-section">
+                   <input type="text" id="searchInput" placeholder="輸入文字，例如: 意識流">
+                   <div class="button-group">
+                       <button id="searchButton">確定</button>
+                       <button id="themeToggle">深色模式</button>
+                   </div>
+               </div>
+               <div class="txt-list" id="txtList">
+                   <p style="padding-left: 0; color: #777;">請輸入文字後按確定進行搜尋。</p>
+               </div>
+           </section>
+           <section class="txt-content-section">
+               <div class="controls">
+                   <button id="prevButton">向前</button>
+                   <button id="nextButton">向後</button>
+                   <button id="copyButton">複製內容</button>
+                   <span class="status" id="status">-/- (檔名)</span>
+               </div>
+               <div class="txt-content" id="txtContent">
+                   <p style="color: #777;">請選擇左側的 TXT 檔案以顯示內容</p>
+               </div>
+           </section>
+       </main>
 
-    <script>
-        const searchButton = document.getElementById('searchButton');
-        const txtList = document.getElementById('txtList');
-        const txtContent = document.getElementById('txtContent');
-        const prevButton = document.getElementById('prevButton');
-        const nextButton = document.getElementById('nextButton');
-        const copyButton = document.getElementById('copyButton');
-        const status = document.getElementById('status');
-        const searchInput = document.getElementById('searchInput');
-        const themeToggle = document.getElementById('themeToggle');
+       <script>
+           const searchButton = document.getElementById('searchButton');
+           const txtList = document.getElementById('txtList');
+           const txtContent = document.getElementById('txtContent');
+           const prevButton = document.getElementById('prevButton');
+           const nextButton = document.getElementById('nextButton');
+           const copyButton = document.getElementById('copyButton');
+           const status = document.getElementById('status');
+           const searchInput = document.getElementById('searchInput');
+           const themeToggle = document.getElementById('themeToggle');
 
-        let searchResults = [];
-        let currentFileIndex = -1;
-        let currentHighlights = [];
-        let currentIndex = 0;
-        let fullText = "";
-        let currentFileName = "";
-        let selectedItem = null;
-        let touchStartX = 0;
+           let searchResults = [];
+           let currentFileIndex = -1;
+           let currentHighlights = [];
+           let currentIndex = 0;
+           let fullText = "";
+           let currentFileName = "";
+           let selectedItem = null;
+           let touchStartX = 0;
 
-        // 定義後端 API 的基礎 URL
-        const backendBaseUrl = `https://flask-txt-search.onrender.com`;
+           // 定義後端 API 的基礎 URL
+           const backendBaseUrl = `https://flask-txt-search.onrender.com`;
 
-        // 防抖函數
-        function debounce(func, wait) {
-            let timeout;
-            return function (...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), wait);
-            };
-        }
+           // 防抖函數
+           function debounce(func, wait) {
+               let timeout;
+               return function (...args) {
+                   clearTimeout(timeout);
+                   timeout = setTimeout(() => func.apply(this, args), wait);
+               };
+           }
 
-        // 螢幕旋轉時重新計算高度
-        function adjustLayout() {
-            const viewportHeight = window.innerHeight;
-            const resultsSection = document.querySelector('.results-section');
-            const txtContentSection = document.querySelector('.txt-content-section');
-            const txtList = document.querySelector('.txt-list');
-            const txtContent = document.querySelector('.txt-content');
-            const controls = document.querySelector('.controls');
+           // 螢幕旋轉時重新計算高度
+           function adjustLayout() {
+               const viewportHeight = window.innerHeight;
+               const resultsSection = document.querySelector('.results-section');
+               const txtContentSection = document.querySelector('.txt-content-section');
+               const txtList = document.querySelector('.txt-list');
+               const txtContent = document.querySelector('.txt-content');
+               const controls = document.querySelector('.controls');
 
-            if (window.innerWidth <= 768) {
-                resultsSection.style.height = `${viewportHeight * 0.5}px`;
-                txtContentSection.style.height = `${viewportHeight * 0.5}px`;
-                txtList.style.maxHeight = `${viewportHeight * 0.5 - 100}px`;
-                const controlsHeight = controls.offsetHeight;
-                txtContent.style.maxHeight = `${viewportHeight * 0.5 - controlsHeight}px`;
-            } else {
-                resultsSection.style.height = 'auto';
-                txtContentSection.style.height = 'auto';
-                txtList.style.maxHeight = 'none';
-                txtContent.style.maxHeight = 'none';
-            }
-        }
+               if (window.innerWidth <= 768) {
+                   resultsSection.style.height = `${viewportHeight * 0.5}px`;
+                   txtContentSection.style.height = `${viewportHeight * 0.5}px`;
+                   txtList.style.maxHeight = `${viewportHeight * 0.5 - 100}px`;
+                   const controlsHeight = controls.offsetHeight;
+                   txtContent.style.maxHeight = `${viewportHeight * 0.5 - controlsHeight}px`;
+               } else {
+                   resultsSection.style.height = 'auto';
+                   txtContentSection.style.height = 'auto';
+                   txtList.style.maxHeight = 'none';
+                   txtContent.style.maxHeight = 'none';
+               }
+           }
 
-        // 初始調整佈局
-        adjustLayout();
+           // 初始調整佈局
+           adjustLayout();
 
-        // 監聽螢幕旋轉和視窗大小變化
-        window.addEventListener('resize', adjustLayout);
-        window.addEventListener('orientationchange', adjustLayout);
+           // 監聽螢幕旋轉和視窗大小變化
+           window.addEventListener('resize', adjustLayout);
+           window.addEventListener('orientationchange', adjustLayout);
 
-        // Theme Toggle Logic
-        const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
-        const isDarkMode = localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && prefersDarkScheme.matches);
-        if (isDarkMode) {
-            document.body.classList.add('dark-mode');
-            themeToggle.textContent = '淺色模式';
-        }
-        prefersDarkScheme.addEventListener('change', (e) => {
-            if (!localStorage.getItem('darkMode')) {
-                document.body.classList.toggle('dark-mode', e.matches);
-                themeToggle.textContent = e.matches ? '淺色模式' : '深色模式';
-            }
-        });
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            const darkModeEnabled = document.body.classList.contains('dark-mode');
-            themeToggle.textContent = darkModeEnabled ? '淺色模式' : '深色模式';
-            localStorage.setItem('darkMode', darkModeEnabled);
-        });
+           // Theme Toggle Logic
+           const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+           const isDarkMode = localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && prefersDarkScheme.matches);
+           if (isDarkMode) {
+               document.body.classList.add('dark-mode');
+               themeToggle.textContent = '淺色模式';
+           }
+           prefersDarkScheme.addEventListener('change', (e) => {
+               if (!localStorage.getItem('darkMode')) {
+                   document.body.classList.toggle('dark-mode', e.matches);
+                   themeToggle.textContent = e.matches ? '淺色模式' : '深色模式';
+               }
+           });
+           themeToggle.addEventListener('click', () => {
+               document.body.classList.toggle('dark-mode');
+               const darkModeEnabled = document.body.classList.contains('dark-mode');
+               themeToggle.textContent = darkModeEnabled ? '淺色模式' : '深色模式';
+               localStorage.setItem('darkMode', darkModeEnabled);
+           });
 
-        // Allow search on Enter key press
-        searchInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                searchButton.click();
-            }
-        });
+           // Allow search on Enter key press
+           searchInput.addEventListener('keypress', function(event) {
+               if (event.key === 'Enter') {
+                   event.preventDefault();
+                   searchButton.click();
+               }
+           });
 
-        searchButton.addEventListener('click', debounce(() => {
-            const input = searchInput.value.trim();
-            if (!input) {
-                alert("請輸入要搜尋的文字。");
-                return;
-            }
+           searchButton.addEventListener('click', debounce(() => {
+               const input = searchInput.value.trim();
+               if (!input) {
+                   alert("請輸入要搜尋的文字。");
+                   return;
+               }
 
-            txtList.innerHTML = '<p style="padding-left: 0; color: #777;"><span class="loading-spinner"></span>搜尋中...（可能需要幾秒，請稍候）</p>';
-            txtContent.innerHTML = '<p style="color: #777;">請選擇左側的 TXT 檔案以顯示內容</p>';
-            status.textContent = '-/- (檔名)';
-            currentFileIndex = -1;
-            currentHighlights = [];
-            currentIndex = 0;
-            fullText = "";
-            currentFileName = "";
-            selectedItem = null;
-            searchResults = [];
+               txtList.innerHTML = '<p style="padding-left: 0; color: #777;"><span class="loading-spinner"></span>搜尋中...（可能需要幾秒，請稍候）</p>';
+               txtContent.innerHTML = '<p style="color: #777;">請選擇左側的 TXT 檔案以顯示內容</p>';
+               status.textContent = '-/- (檔名)';
+               currentFileIndex = -1;
+               currentHighlights = [];
+               currentIndex = 0;
+               fullText = "";
+               currentFileName = "";
+               selectedItem = null;
+               searchResults = [];
 
-            fetch(`${backendBaseUrl}/search`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ input_text: input })
-            })
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return response.json();
-            })
-            .then(data => {
-                txtList.innerHTML = '';
-                searchResults = data;
+               fetch(`${backendBaseUrl}/search`, {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify({ input_text: input })
+               })
+               .then(response => {
+                   if (!response.ok) {
+                       throw new Error(`HTTP error! status: ${response.status}`);
+                   }
+                   return response.json();
+               })
+               .then(data => {
+                   txtList.innerHTML = '';
+                   searchResults = data;
 
-                if (searchResults.length > 0) {
-                    searchResults.forEach((result, index) => {
-                        const item = document.createElement('div');
-                        item.textContent = `${result.file_name.replace(/\.[^/.]+$/, "")} (${result.count})`;
-                        item.title = `${result.file_name} (${result.count} 個結果)`;
-                        item.dataset.index = index;
-                        item.addEventListener('click', () => {
-                            selectFile(item, result.file_name, input, index, 0);
-                        });
-                        txtList.appendChild(item);
-                    });
-                    if (txtList.firstChild) txtList.firstChild.click();
-                } else {
-                    txtList.innerHTML = `<p style="padding-left: 0; color: #777;">找不到包含 "${escapeHTML(input)}" 的檔案。</p>`;
-                }
-            })
-            .catch(error => {
-                console.error('搜尋請求失敗:', error);
-                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋失敗，後端服務可能正在休眠或無法連線，請稍後再試。</p>';
-                txtContent.innerHTML = '<p style="color: #cc0000;">無法執行搜尋。</p>';
-                status.textContent = '搜尋錯誤';
-            });
-        }, 300));
+                   if (searchResults.length > 0) {
+                       searchResults.forEach((result, index) => {
+                           const item = document.createElement('div');
+                           item.textContent = `${result.file_name.replace(/\.[^/.]+$/, "")} (${result.count})`;
+                           item.title = `${result.file_name} (${result.count} 個結果)`;
+                           item.dataset.index = index;
+                           item.addEventListener('click', () => {
+                               selectFile(item, result.file_name, input, index, 0);
+                           });
+                           txtList.appendChild(item);
+                       });
+                       if (txtList.firstChild) txtList.firstChild.click();
+                   } else {
+                       txtList.innerHTML = `<p style="padding-left: 0; color: #777;">找不到包含 "${escapeHTML(input)}" 的檔案。</p>`;
+                   }
+               })
+               .catch(error => {
+                   console.error('搜尋請求失敗:', error);
+                   txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋失敗，後端服務可能正在休眠或無法連線，請稍後再試或喚醒後端服務（訪問 https://flask-txt-search.onrender.com）。</p>';
+                   txtContent.innerHTML = '<p style="color: #cc0000;">無法執行搜尋，請檢查後端服務狀態。</p>';
+                   status.textContent = '搜尋錯誤';
+               });
+           }, 300));
 
-        function selectFile(itemElement, fileName, searchText, fileIndex, initialHighlightIndex) {
-            if (selectedItem) selectedItem.classList.remove('selected');
-            itemElement.classList.add('selected');
-            itemElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            selectedItem = itemElement;
-            currentFileIndex = fileIndex;
-            loadTXTContent(fileName, searchText, initialHighlightIndex);
-        }
+           function selectFile(itemElement, fileName, searchText, fileIndex, initialHighlightIndex) {
+               if (selectedItem) selectedItem.classList.remove('selected');
+               itemElement.classList.add('selected');
+               itemElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+               selectedItem = itemElement;
+               currentFileIndex = fileIndex;
+               loadTXTContent(fileName, searchText, initialHighlightIndex);
+           }
 
-        function loadTXTContent(fileName, searchText, initialHighlightIndex = 0) {
-            currentFileName = fileName;
-            txtContent.innerHTML = "<p style='color: #777;'>載入中...</p>";
-            status.textContent = `載入中... (${currentFileName.replace(/\.[^/.]+$/, "")})`;
+           function loadTXTContent(fileName, searchText, initialHighlightIndex = 0) {
+               currentFileName = fileName;
+               txtContent.innerHTML = "<p style='color: #777;'>載入中...</p>";
+               status.textContent = `載入中... (${currentFileName.replace(/\.[^/.]+$/, "")})`;
 
-            fetch(`${backendBaseUrl}/txt/${fileName}`)
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    return response.json();
-                })
-                .then(data => {
-                    fullText = String(data.content || "").replace(/<br\s*\/?>/gi, '\n');
-                    currentHighlights = [];
-                    currentIndex = 0;
+               fetch(`${backendBaseUrl}/txt/${fileName}`)
+                   .then(response => {
+                       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                       return response.json();
+                   })
+                   .then(data => {
+                       fullText = String(data.content || "").replace(/<br\s*\/?>/gi, '\n');
+                       console.log('載入的 fullText:', fullText.substring(0, 100) + '...'); // 記錄 fullText 前 100 字元
+                       currentHighlights = [];
+                       currentIndex = 0;
 
-                    const escapedSearchText = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-                    if (escapedSearchText) {
-                        const regex = new RegExp(escapedSearchText, 'gi');
-                        let match;
-                        while ((match = regex.exec(fullText)) !== null) {
-                            currentHighlights.push(match.index);
-                        }
-                    }
+                       const escapedSearchText = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                       if (escapedSearchText) {
+                           const regex = new RegExp(escapedSearchText, 'gi');
+                           let match;
+                           while ((match = regex.exec(fullText)) !== null) {
+                               currentHighlights.push(match.index);
+                           }
+                       }
+                       console.log('currentHighlights:', currentHighlights); // 記錄高亮位置
 
-                    if (currentHighlights.length > 0) {
-                        currentIndex = Math.min(Math.max(initialHighlightIndex, 0), currentHighlights.length - 1);
-                        updateContent(searchText);
-                    } else {
-                        const safeFullText = escapeHTML(fullText);
-                        txtContent.innerHTML = `${safeFullText}<p style="color: #777; margin-top: 20px;">(檔案 "${escapeHTML(fileName)}" 中未找到 "${escapeHTML(searchText)}")</p>`;
-                        updateStatus();
-                    }
-                })
-                .catch(error => {
-                    console.error('載入 TXT 內容失敗:', error);
-                    txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線。</p>`;
-                    status.textContent = `載入失敗 (${currentFileName.replace(/\.[^/.]+$/, "")})`;
-                    currentHighlights = [];
-                    updateStatus();
-                });
-        }
+                       if (currentHighlights.length > 0) {
+                           currentIndex = Math.min(Math.max(initialHighlightIndex, 0), currentHighlights.length - 1);
+                           updateContent(searchText);
+                       } else {
+                           const safeFullText = escapeHTML(fullText);
+                           txtContent.innerHTML = `${safeFullText}<p style="color: #777; margin-top: 20px;">(檔案 "${escapeHTML(fileName)}" 中未找到 "${escapeHTML(searchText)}")</p>`;
+                           updateStatus();
+                       }
+                   })
+                   .catch(error => {
+                       console.error('載入 TXT 內容失敗:', error);
+                       txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線。</p>`;
+                       status.textContent = `載入失敗 (${currentFileName.replace(/\.[^/.]+$/, "")})`;
+                       currentHighlights = [];
+                       updateStatus();
+                   });
+           }
 
-        const escapeHTML = (str) => {
-            if (typeof str !== 'string') return String(str);
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return str.replace(/[&<>"']/g, (m) => map[m]);
-        };
+           const escapeHTML = (str) => {
+               if (typeof str !== 'string') return String(str);
+               const map = { '&': '&', '<': '<', '>': '>', '"': '"', "'": ''' };
+               return str.replace(/[&<>"']/g, (m) => map[m]);
+           };
 
-        function updateContent(searchText) {
-            const escapedSearchText = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-            const regex = new RegExp(`(${escapedSearchText})`, 'gi');
-            let htmlContent = escapeHTML(fullText).replace(regex, '<span class="highlight">$1</span>');
-            txtContent.innerHTML = htmlContent;
+           function updateContent(searchText) {
+               const escapedSearchText = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+               const regex = new RegExp(`(${escapedSearchText})`, 'gi');
+               let htmlContent = escapeHTML(fullText).replace(regex, '<span class="highlight">$1</span>');
+               txtContent.innerHTML = htmlContent;
 
-            const highlights = txtContent.getElementsByClassName('highlight');
-            if (highlights.length > 0 && currentIndex >= 0 && currentIndex < highlights.length) {
-                highlights[currentIndex].classList.add('focused');
-                highlights[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            updateStatus();
-        }
+               const highlights = txtContent.getElementsByClassName('highlight');
+               if (highlights.length > 0 && currentIndex >= 0 && currentIndex < highlights.length) {
+                   highlights[currentIndex].classList.add('focused');
+                   highlights[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+               }
+               updateStatus();
+           }
 
-        function updateStatus() {
-            const fileNameDisplay = currentFileName ? currentFileName.replace(/\.[^/.]+$/, "") : '檔名';
-            if (currentHighlights.length > 0) {
-                status.textContent = `${currentIndex + 1}/${currentHighlights.length} (${escapeHTML(fileNameDisplay)})`;
-            } else {
-                status.textContent = `0/0 (${escapeHTML(fileNameDisplay)})`;
-            }
-        }
+           function updateStatus() {
+               const fileNameDisplay = currentFileName ? currentFileName.replace(/\.[^/.]+$/, "") : '檔名';
+               if (currentHighlights.length > 0) {
+                   status.textContent = `${currentIndex + 1}/${currentHighlights.length} (${escapeHTML(fileNameDisplay)})`;
+               } else {
+                   status.textContent = `0/0 (${escapeHTML(fileNameDisplay)})`;
+               }
+           }
 
-        function getContextAroundHighlight() {
-            if (!fullText || currentHighlights.length === 0 || currentIndex < 0 || currentIndex >= currentHighlights.length) {
-                return '';
-            }
+           function getContextAroundHighlight() {
+               if (!fullText || currentHighlights.length === 0 || currentIndex < 0 || currentIndex >= currentHighlights.length) {
+                   console.log('無法獲取上下文：fullText 或 currentHighlights 無效');
+                   return '';
+               }
 
-            const sentenceRegex = /[^.!?。？！]+[.!?。？！]?/g;
-            const sentences = fullText.match(sentenceRegex) || [];
-            if (sentences.length === 0) {
-                return fullText;
-            }
+               // 以換行符分割全文為行
+               const lines = fullText.split('\n').filter(line => line.trim() !== '');
+               if (lines.length === 0) {
+                   console.log('lines 為空，返回 fullText');
+                   return fullText;
+               }
 
-            const highlightPos = currentHighlights[currentIndex];
-            let currentSentenceIndex = -1;
-            let charCount = 0;
+               // 計算高亮詞所在的行號
+               const highlightPos = currentHighlights[currentIndex];
+               let charCount = 0;
+               let currentLineIndex = -1;
 
-            for (let i = 0; i < sentences.length; i++) {
-                if (charCount <= highlightPos && highlightPos < charCount + sentences[i].length) {
-                    currentSentenceIndex = i;
-                    break;
-                }
-                charCount += sentences[i].length;
-            }
+               for (let i = 0; i < lines.length; i++) {
+                   if (charCount <= highlightPos && highlightPos < charCount + lines[i].length + 1) {
+                       currentLineIndex = i;
+                       break;
+                   }
+                   charCount += lines[i].length + 1; // 加 1 代表換行符
+               }
 
-            if (currentSentenceIndex === -1) {
-                return fullText;
-            }
+               if (currentLineIndex === -1) {
+                   console.log('未找到高亮詞所在行，返回 fullText');
+                   return fullText;
+               }
 
-            const startIndex = Math.max(0, currentSentenceIndex - 25);
-            const endIndex = Math.min(sentences.length, currentSentenceIndex + 26);
-            return sentences.slice(startIndex, endIndex).join('');
-        }
+               // 計算前後 25 行的範圍
+               const startIndex = Math.max(0, currentLineIndex - 25);
+               const endIndex = Math.min(lines.length, currentLineIndex + 26); // +26 包含當前行
+               console.log(`複製範圍：從第 ${startIndex} 行到第 ${endIndex} 行`);
+               return lines.slice(startIndex, endIndex).join('\n');
+           }
 
-        prevButton.addEventListener('click', debounce(() => {
-            if (searchResults.length === 0 || currentFileIndex === -1) {
-                alert("請先執行搜尋並選擇一個檔案。");
-                return;
-            }
+           prevButton.addEventListener('click', debounce(() => {
+               if (searchResults.length === 0 || currentFileIndex === -1) {
+                   alert("請先執行搜尋並選擇一個檔案。");
+                   return;
+               }
 
-            if (currentIndex > 0) {
-                currentIndex--;
-                updateContent(searchInput.value);
-            } else {
-                let prevFileIndex = (currentFileIndex - 1 + searchResults.length) % searchResults.length;
-                let prevFileName = searchResults[prevFileIndex].file_name;
-                const prevFileItem = txtList.querySelector(`div[data-index="${prevFileIndex}"]`);
-                if (prevFileItem) {
-                    selectFile(prevFileItem, prevFileName, searchInput.value, prevFileIndex, 999999);
-                }
-            }
-        }, 300));
+               if (currentIndex > 0) {
+                   currentIndex--;
+                   updateContent(searchInput.value);
+               } else {
+                   let prevFileIndex = (currentFileIndex - 1 + searchResults.length) % searchResults.length;
+                   let prevFileName = searchResults[prevFileIndex].file_name;
+                   const prevFileItem = txtList.querySelector(`div[data-index="${prevFileIndex}"]`);
+                   if (prevFileItem) {
+                       selectFile(prevFileItem, prevFileName, searchInput.value, prevFileIndex, 999999);
+                   }
+               }
+           }, 300));
 
-        nextButton.addEventListener('click', debounce(() => {
-            if (searchResults.length === 0 || currentFileIndex === -1) {
-                alert("請先執行搜尋並選擇一個檔案。");
-                return;
-            }
+           nextButton.addEventListener('click', debounce(() => {
+               if (searchResults.length === 0 || currentFileIndex === -1) {
+                   alert("請先執行搜尋並選擇一個檔案。");
+                   return;
+               }
 
-            if (currentIndex < currentHighlights.length - 1) {
-                currentIndex++;
-                updateContent(searchInput.value);
-            } else {
-                let nextFileIndex = (currentFileIndex + 1) % searchResults.length;
-                let nextFileName = searchResults[nextFileIndex].file_name;
-                const nextFileItem = txtList.querySelector(`div[data-index="${nextFileIndex}"]`);
-                if (nextFileItem) {
-                    selectFile(nextFileItem, nextFileName, searchInput.value, nextFileIndex, 0);
-                }
-            }
-        }, 300));
+               if (currentIndex < currentHighlights.length - 1) {
+                   currentIndex++;
+                   updateContent(searchInput.value);
+               } else {
+                   let nextFileIndex = (currentFileIndex + 1) % searchResults.length;
+                   let nextFileName = searchResults[nextFileIndex].file_name;
+                   const nextFileItem = txtList.querySelector(`div[data-index="${nextFileIndex}"]`);
+                   if (nextFileItem) {
+                       selectFile(nextFileItem, nextFileName, searchInput.value, nextFileIndex, 0);
+                   }
+               }
+           }, 300));
 
-        // 長按複製高亮詞
-        txtContent.addEventListener('touchstart', (e) => {
-            const target = e.target;
-            if (target.classList.contains('highlight')) {
-                let touchTimer;
-                touchStartX = e.changedTouches[0].screenX;
-                touchTimer = setTimeout(() => {
-                    const textToCopy = getContextAroundHighlight();
-                    if (textToCopy) {
-                        navigator.clipboard.writeText(textToCopy)
-                            .then(() => {
-                                alert("已複製高亮詞前後 25 句內容到剪貼版！");
-                            })
-                            .catch(err => {
-                                console.error('複製失敗:', err);
-                                alert("複製失敗，請手動複製內容。");
-                            });
-                    }
-                }, 500);
+           // 長按複製高亮詞
+           txtContent.addEventListener('touchstart', (e) => {
+               const target = e.target;
+               if (target.classList.contains('highlight')) {
+                   let touchTimer;
+                   touchStartX = e.changedTouches[0].screenX;
+                   touchTimer = setTimeout(() => {
+                       const textToCopy = getContextAroundHighlight();
+                       if (textToCopy) {
+                           navigator.clipboard.writeText(textToCopy)
+                               .then(() => {
+                                   alert("已複製高亮詞前後 25 句內容到剪貼版！");
+                               })
+                               .catch(err => {
+                                   console.error('複製失敗:', err);
+                                   alert("複製失敗，請手動複製內容。");
+                               });
+                       }
+                   }, 500);
 
-                txtContent.addEventListener('touchend', () => {
-                    clearTimeout(touchTimer);
-                }, { once: true });
-            }
-        });
+                   txtContent.addEventListener('touchend', () => {
+                       clearTimeout(touchTimer);
+                   }, { once: true });
+               }
+           });
 
-        // Copy to Clipboard Logic
-        copyButton.addEventListener('click', debounce(() => {
-            if (!fullText) {
-                alert("目前沒有可複製的內容，請先選擇一個檔案。");
-                return;
-            }
+           // Copy to Clipboard Logic
+           copyButton.addEventListener('click', debounce(() => {
+               if (!fullText) {
+                   alert("目前沒有可複製的內容，請先選擇一個檔案。");
+                   return;
+               }
 
-            const textToCopy = getContextAroundHighlight();
-            if (!textToCopy) {
-                alert("無法複製內容，請選擇一個包含搜尋結果的檔案。");
-                return;
-            }
+               const textToCopy = getContextAroundHighlight();
+               if (!textToCopy) {
+                   alert("無法複製內容，請選擇一個包含搜尋結果的檔案。");
+                   return;
+               }
 
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(textToCopy)
-                    .then(() => {
-                        alert("已複製高亮詞前後 25 句內容到剪貼版！");
-                    })
-                    .catch(err => {
-                        console.error('複製失敗:', err);
-                        fallbackCopy(textToCopy);
-                    });
-            } else {
-                fallbackCopy(textToCopy);
-            }
-        }, 300));
+               if (navigator.clipboard && window.isSecureContext) {
+                   navigator.clipboard.writeText(textToCopy)
+                       .then(() => {
+                           alert("已複製高亮詞前後 25 句內容到剪貼版！");
+                       })
+                       .catch(err => {
+                           console.error('複製失敗:', err);
+                           fallbackCopy(textToCopy);
+                       });
+               } else {
+                   fallbackCopy(textToCopy);
+               }
+           }, 300));
 
-        function fallbackCopy(text) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.opacity = '0';
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                const successful = document.execCommand('copy');
-                if (successful) {
-                    alert("已複製高亮詞前後 25 句內容到剪貼版！");
-                } else {
-                    alert("複製失敗，請手動複製內容。");
-                }
-            } catch (err) {
-                console.error('Fallback 複製失敗:', err);
-                alert("複製失敗，請手動複製內容。");
-            }
-            document.body.removeChild(textArea);
-        }
-    </script>
-</body>
-</html>
+           function fallbackCopy(text) {
+               const textArea = document.createElement('textarea');
+               textArea.value = text;
+               textArea.style.position = 'fixed';
+               textArea.style.opacity = '0';
+               document.body.appendChild(textArea);
+               textArea.focus();
+               textArea.select();
+               try {
+                   const successful = document.execCommand('copy');
+                   if (successful) {
+                       alert("已複製高亮詞前後 25 句內容到剪貼版！");
+                   } else {
+                       alert("複製失敗，請手動複製內容。");
+                   }
+               } catch (err) {
+                   console.error('Fallback 複製失敗:', err);
+                   alert("複製失敗，請手動複製內容。");
+               }
+               document.body.removeChild(textArea);
+           }
+       </script>
+   </body>
+   </html>

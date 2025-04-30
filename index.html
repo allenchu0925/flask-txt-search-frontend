@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.0.5</title>
+    <title>TXT 檔案搜尋系統 v1.0.6</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -403,7 +403,7 @@
                 const response = await fetch(`${backendBaseUrl}/search`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ input_text: input }), // 修正 Blacksmith 為 input
+                    body: JSON.stringify({ input_text: input }),
                     signal: controller.signal
                 });
 
@@ -541,23 +541,40 @@
                 return '';
             }
 
-            const sentenceRegex = /[^.!?。？！]+[.!?。？！]?/g;
-            const sentences = fullText.match(sentenceRegex) || [];
+            // 首先按換行符分割段落，然後在每個段落內按句子分割
+            const paragraphs = fullText.split('\n');
+            let sentences = [];
+            let charCount = 0;
+            let sentenceCharPositions = [];
+
+            // 遍歷每個段落，將段落按句子分割，並記錄每個句子的起始字符位置
+            paragraphs.forEach(paragraph => {
+                const sentenceRegex = /[^.!?。？！]+[.!?。？！]?/g;
+                let match;
+                while ((match = sentenceRegex.exec(paragraph)) !== null) {
+                    const sentence = match[0].trim();
+                    if (sentence.length > 2) { // 過濾掉過短的句子（例如單獨的「（有）」）
+                        sentences.push(sentence);
+                        sentenceCharPositions.push(charCount + match.index);
+                    }
+                }
+                charCount += paragraph.length + 1; // 加 1 代表換行符
+            });
+
             if (sentences.length === 0) {
                 console.log('sentences 為空，返回 fullText');
                 return fullText;
             }
 
+            // 計算高亮詞所在的句子索引
             const highlightPos = currentHighlights[currentIndex];
             let currentSentenceIndex = -1;
-            let charCount = 0;
 
-            for (let i = 0; i < sentences.length; i++) {
-                if (charCount <= highlightPos && highlightPos < charCount + sentences[i].length) {
+            for (let i = 0; i < sentenceCharPositions.length; i++) {
+                if (highlightPos >= sentenceCharPositions[i] && (i === sentenceCharPositions.length - 1 || highlightPos < sentenceCharPositions[i + 1])) {
                     currentSentenceIndex = i;
                     break;
                 }
-                charCount += sentences[i].length;
             }
 
             if (currentSentenceIndex === -1) {
@@ -565,10 +582,11 @@
                 return fullText;
             }
 
-            const startIndex = Math.max(0, currentSentenceIndex - 25);
-            const endIndex = Math.min(sentences.length, currentSentenceIndex + 26);
+            // 調整複製範圍為前後 5 句（總共最多 11 句）
+            const startIndex = Math.max(0, currentSentenceIndex - 5);
+            const endIndex = Math.min(sentences.length, currentSentenceIndex + 6); // +6 包含當前句
             console.log(`複製範圍：從第 ${startIndex} 句到第 ${endIndex} 句`);
-            return sentences.slice(startIndex, endIndex).join('');
+            return sentences.slice(startIndex, endIndex).join('\n');
         }
 
         prevButton.addEventListener('click', debounce(() => {
@@ -620,7 +638,7 @@
                     if (textToCopy) {
                         navigator.clipboard.writeText(textToCopy)
                             .then(() => {
-                                alert("已複製高亮詞前後 25 句內容到剪貼版！");
+                                alert("已複製高亮詞前後 5 句內容到剪貼版！");
                             })
                             .catch(err => {
                                 console.error('複製失敗:', err);
@@ -651,7 +669,7 @@
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(textToCopy)
                     .then(() => {
-                        alert("已複製高亮詞前後 25 句內容到剪貼版！");
+                        alert("已複製高光詞前後 5 句內容到剪貼版！");
                     })
                     .catch(err => {
                         console.error('複製失敗:', err);
@@ -673,7 +691,7 @@
             try {
                 const successful = document.execCommand('copy');
                 if (successful) {
-                    alert("已複製高亮詞前後 25 句內容到剪貼版！");
+                    alert("已複製高光詞前後 5 句內容到剪貼版！");
                 } else {
                     alert("複製失敗，請手動複製內容。");
                 }

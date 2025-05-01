@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.0.9</title>
+    <title>大日宗 檔案搜尋系統 v1.0.10</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -120,6 +120,9 @@
             background-color: #ffeb3b;
             font-weight: bold;
         }
+        .bracket-content {
+            color: #0000FF; /* 括號內容用藍色顯示 */
+        }
         .txt-list div {
             padding: 10px 15px 10px 0px;
             cursor: pointer;
@@ -189,6 +192,9 @@
         }
         body.dark-mode .highlight.focused {
             background-color: #999900;
+        }
+        body.dark-mode .bracket-content {
+            color: #66b3ff; /* 深色模式下括號內容用淺藍色 */
         }
         /* Loading Spinner */
         @keyframes spin {
@@ -513,11 +519,22 @@
         };
 
         function updateContent(searchText) {
+            // Step 1: 處理搜尋詞高亮
+            let htmlContent = escapeHTML(fullText);
             const escapedSearchText = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-            const regex = new RegExp(`(${escapedSearchText})`, 'gi');
-            let htmlContent = escapeHTML(fullText).replace(regex, '<span class="highlight">$1</span>');
+            if (escapedSearchText) {
+                const regex = new RegExp(`(${escapedSearchText})`, 'gi');
+                htmlContent = htmlContent.replace(regex, '<span class="highlight">$1</span>');
+            }
+
+            // Step 2: 處理括號內容（包括括號本身）
+            const bracketRegex = /（[^）]*）/g;
+            htmlContent = htmlContent.replace(bracketRegex, '<span class="bracket-content">$&</span>');
+
+            // Step 3: 顯示內容
             txtContent.innerHTML = htmlContent;
 
+            // Step 4: 處理高亮焦點
             const highlights = txtContent.getElementsByClassName('highlight');
             if (highlights.length > 0 && currentIndex >= 0 && currentIndex < highlights.length) {
                 highlights[currentIndex].classList.add('focused');
@@ -702,5 +719,5 @@
             document.body.removeChild(textArea);
         }
     </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938deb715b7cb022',t:'MTc0NjA4ODI1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

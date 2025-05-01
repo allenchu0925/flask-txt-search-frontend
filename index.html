@@ -3,8 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.1.4</title>
-    <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.3/dist/umd/opencc-js.min.js"></script>
+    <title>TXT 檔案搜尋系統 v1.1.9</title>
+    <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.3/dist/umd/opencc-js.min.js" onerror="loadFallbackOpenCC()"></script>
+    <script>
+        // 後備載入 OpenCC 庫
+        function loadFallbackOpenCC() {
+            console.log('Primary OpenCC CDN failed, attempting fallback...');
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/opencc-js@1.0.3/dist/umd/opencc-js.min.js';
+            script.onerror = () => {
+                console.error('Fallback OpenCC CDN also failed. OpenCC functionality will be disabled.');
+                alert('無法載入 OpenCC 庫，繁簡轉換功能將不可用。請檢查網路連線或稍後再試。');
+                document.getElementById('langToggle').style.display = 'none';
+            };
+            document.head.appendChild(script);
+        }
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -590,7 +604,13 @@
 
         const escapeHTML = (str) => {
             if (typeof str !== 'string') return String(str);
-            const map = { '&': '&', '<': '<', '>': '>', '"': '"', "'": ''' };
+            const map = {
+                '&': '&',
+                '<': '<',
+                '>': '>',
+                '"': '"',
+                "'": '''
+            };
             return str.replace(/[&<>"']/g, (m) => map[m]);
         };
 
@@ -785,8 +805,5 @@
             document.body.removeChild(textArea);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938deb715b7cb022',t:'MTc0NjA4ODI1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938e3e37c895bd00',t:'MTc0NjA5MTY0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938e8208cae77ba2',t:'MTc0NjA5NDQyNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

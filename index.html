@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.1.0</title>
+    <title>TXT 檔案搜尋系統 v1.1.1</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -121,7 +121,7 @@
             font-weight: bold;
         }
         .bracket-content {
-            color: #66b3ff; /* 統一使用此藍色 */
+            color: #0078d7; /* 淺色模式下的括號顏色 */
         }
         .txt-list div {
             padding: 10px 15px 10px 0px;
@@ -192,6 +192,9 @@
         }
         body.dark-mode .highlight.focused {
             background-color: #999900;
+        }
+        body.dark-mode .bracket-content {
+            color: #66b3ff; /* 深色模式下的括號顏色 */
         }
         /* Loading Spinner */
         @keyframes spin {
@@ -361,6 +364,7 @@
             }
         });
         themeToggle.addEventListener('click', () => {
+            document.body => {
             document.body.classList.toggle('dark-mode');
             const darkModeEnabled = document.body.classList.contains('dark-mode');
             themeToggle.textContent = darkModeEnabled ? '淺色模式' : '深色模式';

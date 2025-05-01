@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.2.2</title>
-<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
-<script>
-    window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
-    window.converterToTraditional = OpenCC.Converter({ from: 'cn', to: 'tw' });
-</script>
+    <title>TXT 檔案搜尋系統 v1.2.3</title>
+    <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
+    <script>
+        window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
+        window.converterToTraditional = OpenCC.Converter({ from: 'cn', to: 'tw' });
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -40,7 +40,7 @@
         }
         .input-section input {
             padding: 8px;
-            width: 100%;
+            widthchapter 100%;
             margin-bottom: 10px;
             box-sizing: border-box;
         }
@@ -316,9 +316,30 @@
 
         const backendBaseUrl = `https://flask-txt-search.onrender.com`;
 
-        let converterToSimplified = window.converterToSimplified;
-        let converterToTraditional = window.converterToTraditional;
-        let isSimplified = localStorage.getItem('isSimplified') === 'true';
+        let converterToSimplified = null;
+        let converterToTraditional = null;
+        let isSimplified = false;
+
+        // 延遲初始化，等待 OpenCC 載入
+        document.addEventListener('DOMContentLoaded', () => {
+            const waitForOpenCC = setInterval(() => {
+                if (typeof window.OpenCC !== 'undefined') {
+                    clearInterval(waitForOpenCC);
+                    converterToSimplified = window.converterToSimplified;
+                    converterToTraditional = window.converterToTraditional;
+
+                    // 初始化繁簡模式
+                    isSimplified = localStorage.getItem('isSimplified') === 'true';
+                    if (isSimplified) {
+                        langToggle.textContent = '繁體模式';
+                        applyLanguageConversion();
+                    }
+
+                    // 其他初始化程式碼
+                    adjustLayout();
+                }
+            }, 100);
+        });
 
         if (typeof window.OpenCC === 'undefined') {
             console.error('OpenCC 庫未正確載入，繁簡轉換功能將不可用。');
@@ -357,7 +378,6 @@
             }
         }
 
-        adjustLayout();
         window.addEventListener('resize', adjustLayout);
         window.addEventListener('orientationchange', adjustLayout);
 
@@ -381,10 +401,6 @@
             applyLanguageConversion();
         });
 
-        if (isSimplified) {
-            langToggle.textContent = '繁體模式';
-            applyLanguageConversion();
-        }
         langToggle.addEventListener('click', () => {
             isSimplified = !isSimplified;
             langToggle.textContent = isSimplified ? '繁體模式' : '簡體模式';
@@ -400,7 +416,8 @@
 
         function applyLanguageConversion() {
             if (!converterToSimplified || !converterToTraditional) return;
-            const elementsToConvert = document.querySelectorAll('p:not(.dynamic), button, input[placeholder]');
+
+            const elementsToConvert = document.querySelectorAll('p:not(.dynamic), button, input[placeholder], .status');
             elementsToConvert.forEach(el => {
                 if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
                     const text = el.getAttribute('placeholder');
@@ -409,6 +426,14 @@
                     el.textContent = convertText(el.textContent);
                 }
             });
+
+            // 重新渲染動態內容
+            if (searchResults.length > 0 && searchInput.value) {
+                renderSearchResults(searchInput.value);
+            }
+            if (currentFileName && searchInput.value) {
+                loadTXTContent(currentFileName, searchInput.value, currentIndex);
+            }
         }
 
         function convertText(text) {
@@ -497,8 +522,9 @@
             searchResults.forEach((result, index) => {
                 const item = document.createElement('div');
                 const displayName = convertText(result.file_name.replace(/\.[^/.]+$/, ""));
+                const countText = convertText('個結果');
                 item.textContent = `${displayName} (${result.count})`;
-                item.title = `${displayName} (${result.count} ${convertText('個結果')})`;
+                item.title = `${displayName} (${result.count} ${countText})`;
                 item.dataset.index = index;
                 item.addEventListener('click', () => {
                     selectFile(item, result.file_name, input, index, 0);
@@ -546,7 +572,9 @@
 
                     const escapedSearchText = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
                     if (escapedSearchText) {
-                        const regex = new RegExp(escapedSearchText, 'gi');
+                        const simplifiedSearchText = converterToSimplified ? converterToSimplified(escapedSearchText) : escapedSearchText;
+                        const traditionalSearchText = converterToTraditional ? converterToTraditional(escapedSearchText) : escapedSearchText;
+                        const regex = new RegExp(`(${simplifiedSearchText}|${traditionalSearchText})`, 'gi');
                         let match;
                         while ((match = regex.exec(fullText)) !== null) {
                             currentHighlights.push(match.index);
@@ -573,27 +601,51 @@
                 });
         }
 
- const escapeHTML = (str) => {
-    if (typeof str !== 'string') return String(str);
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    };
-    return str.replace(/[&<>"']/g, (m) => map[m]);
-};
+        const escapeHTML = (str) => {
+            if (typeof str !== 'string') return String(str);
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            };
+            return str.replace(/[&<>"']/g, (m) => map[m]);
+        };
+
         function updateContent(searchText) {
-            let htmlContent = escapeHTML(fullText);
+            let htmlContent = fullText;
+
+            // 步驟 1：高亮搜尋關鍵詞
             const escapedSearchText = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
             if (escapedSearchText) {
-                const regex = new RegExp(`(${escapedSearchText})`, 'gi');
+                const simplifiedSearchText = converterToSimplified ? converterToSimplified(escapedSearchText) : escapedSearchText;
+                const traditionalSearchText = converterToTraditional ? converterToTraditional(escapedSearchText) : escapedSearchText;
+                const regex = new RegExp(`(${simplifiedSearchText}|${traditionalSearchText})`, 'gi');
                 htmlContent = htmlContent.replace(regex, '<span class="highlight">$1</span>');
             }
 
+            // 步驟 2：處理括號換色
             const bracketRegex = /(?:（[^）]*）|\([^()]*\))/g;
             htmlContent = htmlContent.replace(bracketRegex, '<span class="bracket-content">$&</span>');
+
+            // 步驟 3：對剩餘部分進行 escapeHTML，但保留 <span> 標籤
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            const spans = tempDiv.querySelectorAll('span');
+            const parts = [];
+            let lastIndex = 0;
+
+            spans.forEach(span => {
+                const spanIndex = htmlContent.indexOf(span.outerHTML, lastIndex);
+                const textBefore = htmlContent.substring(lastIndex, spanIndex);
+                parts.push(escapeHTML(textBefore));
+                parts.push(span.outerHTML);
+                lastIndex = spanIndex + span.outerHTML.length;
+            });
+
+            parts.push(escapeHTML(htmlContent.substring(lastIndex)));
+            htmlContent = parts.join('');
 
             txtContent.innerHTML = htmlContent;
 
@@ -670,6 +722,11 @@
                 return;
             }
 
+            if (currentHighlights.length === 0) {
+                alert(convertText("目前檔案中無高亮結果，無法切換。"));
+                return;
+            }
+
             if (currentIndex > 0) {
                 currentIndex--;
                 updateContent(searchInput.value);
@@ -683,9 +740,14 @@
             }
         }, 300));
 
-        nextButton.addEventListener('click', debounce(() => {
+        nextButtonReinforcementListener('click', debounce(() => {
             if (searchResults.length === 0 || currentFileIndex === -1) {
                 alert(convertText("請先執行搜尋並選擇一個檔案。"));
+                return;
+            }
+
+            if (currentHighlights.length === 0) {
+                alert(convertText("目前檔案中無高亮結果，無法切換。"));
                 return;
             }
 
@@ -775,5 +837,6 @@
             document.body.removeChild(textArea);
         }
     </script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938ff4368be8dd21',t:'MTc0NjEwOTU4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗\法身宗 文字檔搜尋系統 v1.2.5</title>
+    <title>大日宗\法身宗 文字檔搜尋系統 v1.2.6</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
@@ -647,13 +647,30 @@
             parts.push(escapeHTML(htmlContent.substring(lastIndex)));
             htmlContent = parts.join('');
 
+            // 渲染內容
             txtContent.innerHTML = htmlContent;
 
+            // 找到高亮元素並瞬間定位
             const highlights = txtContent.getElementsByClassName('highlight');
             if (highlights.length > 0 && currentIndex >= 0 && currentIndex < highlights.length) {
-                highlights[currentIndex].classList.add('focused');
-                highlights[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const focusedHighlight = highlights[currentIndex];
+                focusedHighlight.classList.add('focused');
+
+                // 計算高亮元素相對於 txtContent 的偏移量
+                const rect = focusedHighlight.getBoundingClientRect();
+                const containerRect = txtContent.getBoundingClientRect();
+                const offsetTop = rect.top - containerRect.top + txtContent.scrollTop;
+
+                // 將高亮元素置中：計算偏移量，使高亮元素位於視窗中間
+                const centerOffset = offsetTop - (txtContent.clientHeight / 2) + (rect.height / 2);
+
+                // 瞬間定位（無動畫）
+                txtContent.scrollTo({
+                    top: centerOffset,
+                    behavior: 'auto'
+                });
             }
+
             updateStatus();
         }
 
@@ -850,5 +867,6 @@
     </script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938ff4368be8dd21',t:'MTc0NjEwOTU4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93902d317ab1bd2f',t:'MTc0NjExMTkyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93904c321d12b054',t:'MTc0NjExMzE5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

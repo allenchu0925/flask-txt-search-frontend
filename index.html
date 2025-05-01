@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.1.6</title>
-    <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.3/dist/umd/opencc-js.min.js"></script>
+    <title>TXT 檔案搜尋系統 v1.1.2</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -48,15 +47,13 @@
             padding: 8px 15px;
             cursor: pointer;
         }
-        .input-section #themeToggle,
-        .input-section #langToggle {
+        .input-section #themeToggle {
             background-color: #0078d7;
             color: white;
             border: none;
             border-radius: 3px;
         }
-        .input-section #themeToggle:hover,
-        .input-section #langToggle:hover {
+        .input-section #themeToggle:hover {
             background-color: #005a9e;
         }
         .txt-list {
@@ -272,7 +269,6 @@
                 <div class="button-group">
                     <button id="searchButton">確定</button>
                     <button id="themeToggle">深色模式</button>
-                    <button id="langToggle">簡體模式</button>
                 </div>
             </div>
             <div class="txt-list" id="txtList">
@@ -302,7 +298,6 @@
         const status = document.getElementById('status');
         const searchInput = document.getElementById('searchInput');
         const themeToggle = document.getElementById('themeToggle');
-        const langToggle = document.getElementById('langToggle');
 
         let searchResults = [];
         let currentFileIndex = -1;
@@ -315,11 +310,6 @@
 
         // 定義後端 API 的基礎 URL
         const backendBaseUrl = `https://flask-txt-search.onrender.com`;
-
-        // 初始化繁簡轉換器（opencc-js）
-        const converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' }); // 繁轉簡
-        const converterToTraditional = OpenCC.Converter({ from: 'cn', to: 'tw' }); // 簡轉繁
-        let isSimplified = localStorage.getItem('isSimplified') === 'true';
 
         // 防抖函數
         function debounce(func, wait) {
@@ -378,43 +368,7 @@
             const darkModeEnabled = document.body.classList.contains('dark-mode');
             themeToggle.textContent = darkModeEnabled ? '淺色模式' : '深色模式';
             localStorage.setItem('darkMode', darkModeEnabled);
-            applyLanguageConversion();
         });
-
-        // Language Toggle Logic (繁簡切換)
-        if (isSimplified) {
-            langToggle.textContent = '繁體模式';
-            applyLanguageConversion();
-        }
-        langToggle.addEventListener('click', () => {
-            isSimplified = !isSimplified;
-            langToggle.textContent = isSimplified ? '繁體模式' : '簡體模式';
-            localStorage.setItem('isSimplified', isSimplified);
-            applyLanguageConversion();
-            if (currentFileName && searchInput.value) {
-                loadTXTContent(currentFileName, searchInput.value, currentIndex);
-            }
-            if (searchResults.length > 0) {
-                renderSearchResults(searchInput.value);
-            }
-        });
-
-        function applyLanguageConversion() {
-            const elementsToConvert = document.querySelectorAll('p:not(.dynamic), button, input[placeholder]');
-            elementsToConvert.forEach(el => {
-                if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
-                    const text = el.getAttribute('placeholder');
-                    el.setAttribute('placeholder', convertText(text));
-                } else {
-                    el.textContent = convertText(el.textContent);
-                }
-            });
-        }
-
-        function convertText(text) {
-            if (!text || typeof text !== 'string') return text;
-            return isSimplified ? converterToSimplified(text) : converterToTraditional(text);
-        }
 
         // Allow search on Enter key press
         searchInput.addEventListener('keypress', function(event) {
@@ -425,17 +379,14 @@
         });
 
         searchButton.addEventListener('click', debounce(async () => {
-            let input = searchInput.value.trim();
+            const input = searchInput.value.trim();
             if (!input) {
-                alert(convertText("請輸入要搜尋的文字。"));
+                alert("請輸入要搜尋的文字。");
                 return;
             }
 
-            // 如果是簡體模式，將輸入轉為繁體以傳給伺服器
-            const searchTextForServer = isSimplified ? converterToTraditional(input) : input;
-
-            txtList.innerHTML = `<p class="dynamic" style="padding-left: 0; color: #777;"><span class="loading-spinner"></span>${convertText('搜尋中...（可能需要幾秒，請稍候）')}</p>`;
-            txtContent.innerHTML = `<p class="dynamic" style="color: #777;">${convertText('請選擇左側的 TXT 檔案以顯示內容')}</p>`;
+            txtList.innerHTML = '<p style="padding-left: 0; color: #777;"><span class="loading-spinner"></span>搜尋中...（可能需要幾秒，請稍候）</p>';
+            txtContent.innerHTML = '<p style="color: #777;">請選擇左側的 TXT 檔案以顯示內容</p>';
             status.textContent = '-/- (檔名)';
             currentFileIndex = -1;
             currentHighlights = [];
@@ -449,16 +400,16 @@
             const controller = new AbortController();
             const timeoutId = setTimeout(() => {
                 controller.abort();
-                txtList.innerHTML = `<p class="dynamic" style="padding-left: 0; color: #cc0000; font-weight:bold;">${convertText('搜尋超時，後端服務可能正在休眠或無法連線，請')}<a href="https://flask-txt-search.onrender.com" target="_blank">${convertText('點擊此處喚醒後端服務')}</a>，${convertText('然後重新搜尋。')}</p>`;
-                txtContent.innerHTML = `<p class="dynamic" style="color: #cc0000;">${convertText('無法執行搜尋，請檢查後端服務狀態。')}</p>`;
-                status.textContent = convertText('搜尋超時');
+                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋超時，後端服務可能正在休眠或無法連線，請<a href="https://flask-txt-search.onrender.com" target="_blank">點擊此處喚醒後端服務</a>，然後重新搜尋。</p>';
+                txtContent.innerHTML = '<p style="color: #cc0000;">無法執行搜尋，請檢查後端服務狀態。</p>';
+                status.textContent = '搜尋超時';
             }, 10000); // 10 秒超時
 
             try {
                 const response = await fetch(`${backendBaseUrl}/search`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ input_text: searchTextForServer }),
+                    body: JSON.stringify({ input_text: input }),
                     signal: controller.signal
                 });
 
@@ -473,34 +424,28 @@
                 searchResults = data;
 
                 if (searchResults.length > 0) {
-                    renderSearchResults(input);
+                    searchResults.forEach((result, index) => {
+                        const item = document.createElement('div');
+                        item.textContent = `${result.file_name.replace(/\.[^/.]+$/, "")} (${result.count})`;
+                        item.title = `${result.file_name} (${result.count} 個結果)`;
+                        item.dataset.index = index;
+                        item.addEventListener('click', () => {
+                            selectFile(item, result.file_name, input, index, 0);
+                        });
+                        txtList.appendChild(item);
+                    });
                     if (txtList.firstChild) txtList.firstChild.click();
                 } else {
-                    txtList.innerHTML = `<p class="dynamic" style="padding-left: 0; color: #777;">${convertText('找不到包含')} "${escapeHTML(input)}" ${convertText('的檔案。')}</p>`;
+                    txtList.innerHTML = `<p style="padding-left: 0; color: #777;">找不到包含 "${escapeHTML(input)}" 的檔案。</p>`;
                 }
             } catch (error) {
                 clearTimeout(timeoutId);
                 console.error('搜尋請求失敗:', error);
-                txtList.innerHTML = `<p class="dynamic" style="padding-left: 0; color: #cc0000; font-weight:bold;">${convertText('搜尋失敗，後端服務可能正在休眠或無法連線，請')}<a href="https://flask-txt-search.onrender.com" target="_blank">${convertText('點擊此處喚醒後端服務')}</a>，${convertText('然後重新搜尋。')}</p>`;
-                txtContent.innerHTML = `<p class="dynamic" style="color: #cc0000;">${convertText('無法執行搜尋，請檢查後端服務狀態。')}</p>`;
-                status.textContent = convertText('搜尋錯誤');
+                txtList.innerHTML = '<p style="padding-left: 0; color: #cc0000; font-weight:bold;">搜尋失敗，後端服務可能正在休眠或無法連線，請<a href="https://flask-txt-search.onrender.com" target="_blank">點擊此處喚醒後端服務</a>，然後重新搜尋。</p>';
+                txtContent.innerHTML = '<p style="color: #cc0000;">無法執行搜尋，請檢查後端服務狀態。</p>';
+                status.textContent = '搜尋錯誤';
             }
         }, 300));
-
-        function renderSearchResults(input) {
-            txtList.innerHTML = '';
-            searchResults.forEach((result, index) => {
-                const item = document.createElement('div');
-                const displayName = convertText(result.file_name.replace(/\.[^/.]+$/, ""));
-                item.textContent = `${displayName} (${result.count})`;
-                item.title = `${displayName} (${result.count} ${convertText('個結果')})`;
-                item.dataset.index = index;
-                item.addEventListener('click', () => {
-                    selectFile(item, result.file_name, input, index, 0);
-                });
-                txtList.appendChild(item);
-            });
-        }
 
         function selectFile(itemElement, fileName, searchText, fileIndex, initialHighlightIndex) {
             if (selectedItem) selectedItem.classList.remove('selected');
@@ -513,17 +458,18 @@
 
         function loadTXTContent(fileName, searchText, initialHighlightIndex = 0) {
             currentFileName = fileName;
-            txtContent.innerHTML = `<p class="dynamic" style='color: #777;'>${convertText('載入中...')}</p>`;
-            status.textContent = `${convertText('載入中...')} (${currentFileName.replace(/\.[^/.]+$/, "")})`;
+            txtContent.innerHTML = "<p style='color: #777;'>載入中...</p>";
+            status.textContent = `載入中... (${currentFileName.replace(/\.[^/.]+$/, "")})`;
 
+            // 設置 fetch 超時
             const controller = new AbortController();
             const timeoutId = setTimeout(() => {
                 controller.abort();
-                txtContent.innerHTML = `<p class="dynamic" style="color: #cc0000;">${convertText('無法載入或顯示檔案')} "${escapeHTML(fileName)}" ${convertText('的內容，後端服務可能正在休眠或無法連線，請')}<a href="https://flask-txt-search.onrender.com" target="_blank">${convertText('點擊此處喚醒後端服務')}</a>，${convertText('然後重新載入。')}</p>`;
-                status.textContent = `${convertText('載入超時')} (${currentFileName.replace(/\.[^/.]+$/, "")})`;
+                txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線，請<a href="https://flask-txt-search.onrender.com" target="_blank">點擊此處喚醒後端服務</a>，然後重新載入。</p>`;
+                status.textContent = `載入超時 (${currentFileName.replace(/\.[^/.]+$/, "")})`;
                 currentHighlights = [];
                 updateStatus();
-            }, 10000);
+            }, 10000); // 10 秒超時
 
             fetch(`${backendBaseUrl}/txt/${fileName}`, { signal: controller.signal })
                 .then(response => {
@@ -533,7 +479,7 @@
                 })
                 .then(data => {
                     fullText = String(data.content || "").replace(/<br\s*\/?>/gi, '\n');
-                    fullText = convertText(fullText); // 轉換檔案內容
+                    console.log('載入的 fullText:', fullText.substring(0, 100) + '...'); // 記錄 fullText 前 100 字元
                     currentHighlights = [];
                     currentIndex = 0;
 
@@ -545,21 +491,22 @@
                             currentHighlights.push(match.index);
                         }
                     }
+                    console.log('currentHighlights:', currentHighlights); // 記錄高亮位置
 
                     if (currentHighlights.length > 0) {
                         currentIndex = Math.min(Math.max(initialHighlightIndex, 0), currentHighlights.length - 1);
                         updateContent(searchText);
                     } else {
                         const safeFullText = escapeHTML(fullText);
-                        txtContent.innerHTML = `${safeFullText}<p class="dynamic" style="color: #777; margin-top: 20px;">(${convertText('檔案')} "${escapeHTML(fileName)}" ${convertText('中未找到')} "${escapeHTML(searchText)}")</p>`;
+                        txtContent.innerHTML = `${safeFullText}<p style="color: #777; margin-top: 20px;">(檔案 "${escapeHTML(fileName)}" 中未找到 "${escapeHTML(searchText)}")</p>`;
                         updateStatus();
                     }
                 })
                 .catch(error => {
                     clearTimeout(timeoutId);
                     console.error('載入 TXT 內容失敗:', error);
-                    txtContent.innerHTML = `<p class="dynamic" style="color: #cc0000;">${convertText('無法載入或顯示檔案')} "${escapeHTML(fileName)}" ${convertText('的內容，後端服務可能正在休眠或無法連線，請')}<a href="https://flask-txt-search.onrender.com" target="_blank">${convertText('點擊此處喚醒後端服務')}</a>，${convertText('然後重新載入。')}</p>`;
-                    status.textContent = `${convertText('載入失敗')} (${currentFileName.replace(/\.[^/.]+$/, "")})`;
+                    txtContent.innerHTML = `<p style="color: #cc0000;">無法載入或顯示檔案 "${escapeHTML(fileName)}" 的內容，後端服務可能正在休眠或無法連線，請<a href="https://flask-txt-search.onrender.com" target="_blank">點擊此處喚醒後端服務</a>，然後重新載入。</p>`;
+                    status.textContent = `載入失敗 (${currentFileName.replace(/\.[^/.]+$/, "")})`;
                     currentHighlights = [];
                     updateStatus();
                 });
@@ -572,6 +519,7 @@
         };
 
         function updateContent(searchText) {
+            // Step 1: 處理搜尋詞高亮
             let htmlContent = escapeHTML(fullText);
             const escapedSearchText = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
             if (escapedSearchText) {
@@ -579,11 +527,14 @@
                 htmlContent = htmlContent.replace(regex, '<span class="highlight">$1</span>');
             }
 
+            // Step 2: 處理全形和半形括號內容（包括括號本身）
             const bracketRegex = /(?:（[^）]*）|\([^()]*\))/g;
             htmlContent = htmlContent.replace(bracketRegex, '<span class="bracket-content">$&</span>');
 
+            // Step 3: 顯示內容
             txtContent.innerHTML = htmlContent;
 
+            // Step 4: 處理高亮焦點
             const highlights = txtContent.getElementsByClassName('highlight');
             if (highlights.length > 0 && currentIndex >= 0 && currentIndex < highlights.length) {
                 highlights[currentIndex].classList.add('focused');
@@ -593,7 +544,7 @@
         }
 
         function updateStatus() {
-            const fileNameDisplay = currentFileName ? currentFileName.replace(/\.[^/.]+$/, "") : convertText('檔名');
+            const fileNameDisplay = currentFileName ? currentFileName.replace(/\.[^/.]+$/, "") : '檔名';
             if (currentHighlights.length > 0) {
                 status.textContent = `${currentIndex + 1}/${currentHighlights.length} (${escapeHTML(fileNameDisplay)})`;
             } else {
@@ -603,31 +554,36 @@
 
         function getContextAroundHighlight() {
             if (!fullText || currentHighlights.length === 0 || currentIndex < 0 || currentIndex >= currentHighlights.length) {
+                console.log('無法獲取上下文：fullText 或 currentHighlights 無效');
                 return '';
             }
 
+            // 首先按換行符分割段落，然後在每個段落內按句子分割
             const paragraphs = fullText.split('\n');
             let sentences = [];
             let charCount = 0;
             let sentenceCharPositions = [];
 
+            // 遍歷每個段落，將段落按句子分割，並記錄每個句子的起始字符位置
             paragraphs.forEach(paragraph => {
                 const sentenceRegex = /[^.!?。？！]+[.!?。？！]?/g;
                 let match;
                 while ((match = sentenceRegex.exec(paragraph)) !== null) {
                     const sentence = match[0].trim();
-                    if (sentence.length > 2) {
+                    if (sentence.length > 2) { // 過濾掉過短的句子（例如單獨的「（有）」）
                         sentences.push(sentence);
                         sentenceCharPositions.push(charCount + match.index);
                     }
                 }
-                charCount += paragraph.length + 1;
+                charCount += paragraph.length + 1; // 加 1 代表換行符
             });
 
             if (sentences.length === 0) {
+                console.log('sentences 為空，返回 fullText');
                 return fullText;
             }
 
+            // 計算高亮詞所在的句子索引
             const highlightPos = currentHighlights[currentIndex];
             let currentSentenceIndex = -1;
 
@@ -639,17 +595,20 @@
             }
 
             if (currentSentenceIndex === -1) {
+                console.log('未找到高亮詞所在句子，返回 fullText');
                 return fullText;
             }
 
+            // 調整複製範圍為前後 20 句（總共最多 41 句）
             const startIndex = Math.max(0, currentSentenceIndex - 20);
-            const endIndex = Math.min(sentences.length, currentSentenceIndex + 21);
+            const endIndex = Math.min(sentences.length, currentSentenceIndex + 21); // +21 包含當前句
+            console.log(`複製範圍：從第 ${startIndex} 句到第 ${endIndex} 句`);
             return sentences.slice(startIndex, endIndex).join('\n');
         }
 
         prevButton.addEventListener('click', debounce(() => {
             if (searchResults.length === 0 || currentFileIndex === -1) {
-                alert(convertText("請先執行搜尋並選擇一個檔案。"));
+                alert("請先執行搜尋並選擇一個檔案。");
                 return;
             }
 
@@ -668,7 +627,7 @@
 
         nextButton.addEventListener('click', debounce(() => {
             if (searchResults.length === 0 || currentFileIndex === -1) {
-                alert(convertText("請先執行搜尋並選擇一個檔案。"));
+                alert("請先執行搜尋並選擇一個檔案。");
                 return;
             }
 
@@ -685,6 +644,7 @@
             }
         }, 300));
 
+        // 長按複製高亮詞
         txtContent.addEventListener('touchstart', (e) => {
             const target = e.target;
             if (target.classList.contains('highlight')) {
@@ -695,11 +655,11 @@
                     if (textToCopy) {
                         navigator.clipboard.writeText(textToCopy)
                             .then(() => {
-                                alert(convertText("已複製高光詞前後 20 句內容到剪貼版！"));
+                                alert("已複製高光詞前後 20 句內容到剪貼版！");
                             })
                             .catch(err => {
                                 console.error('複製失敗:', err);
-                                alert(convertText("複製失敗，請手動複製內容。"));
+                                alert("複製失敗，請手動複製內容。");
                             });
                     }
                 }, 500);
@@ -710,22 +670,23 @@
             }
         });
 
+        // Copy to Clipboard Logic
         copyButton.addEventListener('click', debounce(() => {
             if (!fullText) {
-                alert(convertText("目前沒有可複製的內容，請先選擇一個檔案。"));
+                alert("目前沒有可複製的內容，請先選擇一個檔案。");
                 return;
             }
 
             const textToCopy = getContextAroundHighlight();
             if (!textToCopy) {
-                alert(convertText("無法複製內容，請選擇一個包含搜尋結果的檔案。"));
+                alert("無法複製內容，請選擇一個包含搜尋結果的檔案。");
                 return;
             }
 
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(textToCopy)
                     .then(() => {
-                        alert(convertText("已複製高光詞前後 20 句內容到剪貼版！"));
+                        alert("已複製高光詞前後 20 句內容到剪貼版！");
                     })
                     .catch(err => {
                         console.error('複製失敗:', err);
@@ -747,19 +708,18 @@
             try {
                 const successful = document.execCommand('copy');
                 if (successful) {
-                    alert(convertText("已複製高光詞前後 20 句內容到剪貼版！"));
+                    alert("已複製高光詞前後 20 句內容到剪貼版！");
                 } else {
-                    alert(convertText("複製失敗，請手動複製內容。"));
+                    alert("複製失敗，請手動複製內容。");
                 }
             } catch (err) {
                 console.error('Fallback 複製失敗:', err);
-                alert(convertText("複製失敗，請手動複製內容。"));
+                alert("複製失敗，請手動複製內容。");
             }
             document.body.removeChild(textArea);
         }
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938deb715b7cb022',t:'MTc0NjA4ODI1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938e3e37c895bd00',t:'MTc0NjA5MTY0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938e74cb2cbce58e',t:'MTc0NjA5Mzg4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

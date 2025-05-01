@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗\法身宗 文字檔搜尋系統 v1.2.6</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.7</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
@@ -140,7 +140,7 @@
             transition: background-color 0.2s;
         }
         .txt-list div:last-child {
-            border-bottom: none;
+            border-bottom: null;
         }
         .txt-list div:hover {
             background-color: #e6f2ff;
@@ -619,6 +619,7 @@
         function updateContent(searchText) {
             let htmlContent = fullText;
 
+            // 高亮搜尋詞
             const escapedSearchText = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
             if (escapedSearchText) {
                 const simplifiedSearchText = converterToSimplified ? converterToSimplified(escapedSearchText) : escapedSearchText;
@@ -627,24 +628,26 @@
                 htmlContent = htmlContent.replace(regex, '<span class="highlight">$1</span>');
             }
 
+            // 高亮括號內容
             const bracketRegex = /(?:（[^）]*）|\([^()]*\))/g;
             htmlContent = htmlContent.replace(bracketRegex, '<span class="bracket-content">$&</span>');
 
+            // 將純文字部分進行轉義，確保不影響 <span> 標籤
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlContent;
-            const spans = tempDiv.querySelectorAll('span');
+            const childNodes = tempDiv.childNodes;
             const parts = [];
-            let lastIndex = 0;
 
-            spans.forEach(span => {
-                const spanIndex = htmlContent.indexOf(span.outerHTML, lastIndex);
-                const textBefore = htmlContent.substring(lastIndex, spanIndex);
-                parts.push(escapeHTML(textBefore));
-                parts.push(span.outerHTML);
-                lastIndex = spanIndex + span.outerHTML.length;
+            childNodes.forEach(node => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    // 對純文字節點進行轉義
+                    parts.push(escapeHTML(node.textContent));
+                } else {
+                    // 保留 HTML 節點（例如 <span> 標籤）
+                    parts.push(node.outerHTML || node.textContent);
+                }
             });
 
-            parts.push(escapeHTML(htmlContent.substring(lastIndex)));
             htmlContent = parts.join('');
 
             // 渲染內容

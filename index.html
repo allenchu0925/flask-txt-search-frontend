@@ -573,17 +573,17 @@
                 });
         }
 
-        const escapeHTML = (str) => {
-            if (typeof str !== 'string') return String(str);
-            const map = {
-                '&': '&',
-                '<': '<',
-                '>': '>',
-                '"': '"'
-            };
-            return str.replace(/[&<>"']/g, (m) => map[m]);
-        };
-
+ const escapeHTML = (str) => {
+    if (typeof str !== 'string') return String(str);
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    };
+    return str.replace(/[&<>"']/g, (m) => map[m]);
+};
         function updateContent(searchText) {
             let htmlContent = escapeHTML(fullText);
             const escapedSearchText = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');

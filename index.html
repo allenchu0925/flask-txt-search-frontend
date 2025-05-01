@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.2.3</title>
+    <title>TXT 檔案搜尋系統 v1.2.4</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
@@ -40,7 +40,7 @@
         }
         .input-section input {
             padding: 8px;
-            widthchapter 100%;
+            width: 100%;
             margin-bottom: 10px;
             box-sizing: border-box;
         }
@@ -320,7 +320,6 @@
         let converterToTraditional = null;
         let isSimplified = false;
 
-        // 延遲初始化，等待 OpenCC 載入
         document.addEventListener('DOMContentLoaded', () => {
             const waitForOpenCC = setInterval(() => {
                 if (typeof window.OpenCC !== 'undefined') {
@@ -328,14 +327,12 @@
                     converterToSimplified = window.converterToSimplified;
                     converterToTraditional = window.converterToTraditional;
 
-                    // 初始化繁簡模式
                     isSimplified = localStorage.getItem('isSimplified') === 'true';
                     if (isSimplified) {
                         langToggle.textContent = '繁體模式';
                         applyLanguageConversion();
                     }
 
-                    // 其他初始化程式碼
                     adjustLayout();
                 }
             }, 100);
@@ -427,7 +424,6 @@
                 }
             });
 
-            // 重新渲染動態內容
             if (searchResults.length > 0 && searchInput.value) {
                 renderSearchResults(searchInput.value);
             }
@@ -526,12 +522,19 @@
                 item.textContent = `${displayName} (${result.count})`;
                 item.title = `${displayName} (${result.count} ${countText})`;
                 item.dataset.index = index;
+                if (index === currentFileIndex) {
+                    item.classList.add('selected');
+                    selectedItem = item;
+                }
                 item.addEventListener('click', () => {
                     selectFile(item, result.file_name, input, index, 0);
                 });
                 txtList.appendChild(item);
             });
             console.log('Search results rendered');
+            if (selectedItem) {
+                selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
 
         function selectFile(itemElement, fileName, searchText, fileIndex, initialHighlightIndex) {
@@ -580,7 +583,7 @@
                             currentHighlights.push(match.index);
                         }
                     }
-                    console.log('currentHighlights:', currentHighlights);
+                    console.log('After loading content - currentHighlights:', currentHighlights, 'searchText:', searchText);
 
                     if (currentHighlights.length > 0) {
                         currentIndex = Math.min(Math.max(initialHighlightIndex, 0), currentHighlights.length - 1);
@@ -604,11 +607,11 @@
         const escapeHTML = (str) => {
             if (typeof str !== 'string') return String(str);
             const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;'
+                '&': '&',
+                '<': '<',
+                '>': '>',
+                '"': '"',
+                "'": '''
             };
             return str.replace(/[&<>"']/g, (m) => map[m]);
         };
@@ -616,7 +619,6 @@
         function updateContent(searchText) {
             let htmlContent = fullText;
 
-            // 步驟 1：高亮搜尋關鍵詞
             const escapedSearchText = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
             if (escapedSearchText) {
                 const simplifiedSearchText = converterToSimplified ? converterToSimplified(escapedSearchText) : escapedSearchText;
@@ -625,11 +627,9 @@
                 htmlContent = htmlContent.replace(regex, '<span class="highlight">$1</span>');
             }
 
-            // 步驟 2：處理括號換色
             const bracketRegex = /(?:（[^）]*）|\([^()]*\))/g;
             htmlContent = htmlContent.replace(bracketRegex, '<span class="bracket-content">$&</span>');
 
-            // 步驟 3：對剩餘部分進行 escapeHTML，但保留 <span> 標籤
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlContent;
             const spans = tempDiv.querySelectorAll('span');
@@ -740,26 +740,37 @@
             }
         }, 300));
 
-        nextButtonReinforcementListener('click', debounce(() => {
+        nextButton.addEventListener('click', debounce(() => {
+            console.log('Next button clicked');
+            console.log('searchResults.length:', searchResults.length, 'currentFileIndex:', currentFileIndex);
+            console.log('currentHighlights:', currentHighlights, 'currentIndex:', currentIndex);
+
             if (searchResults.length === 0 || currentFileIndex === -1) {
+                console.log('No search results or file not selected');
                 alert(convertText("請先執行搜尋並選擇一個檔案。"));
                 return;
             }
 
             if (currentHighlights.length === 0) {
+                console.log('No highlights in current file');
                 alert(convertText("目前檔案中無高亮結果，無法切換。"));
                 return;
             }
 
+            console.log('Condition check: currentIndex < currentHighlights.length - 1', currentIndex < currentHighlights.length - 1);
             if (currentIndex < currentHighlights.length - 1) {
                 currentIndex++;
+                console.log('Incremented currentIndex to:', currentIndex);
                 updateContent(searchInput.value);
             } else {
                 let nextFileIndex = (currentFileIndex + 1) % searchResults.length;
                 let nextFileName = searchResults[nextFileIndex].file_name;
                 const nextFileItem = txtList.querySelector(`div[data-index="${nextFileIndex}"]`);
+                console.log('Jumping to next file:', nextFileName, 'nextFileIndex:', nextFileIndex);
                 if (nextFileItem) {
                     selectFile(nextFileItem, nextFileName, searchInput.value, nextFileIndex, 0);
+                } else {
+                    console.error('Next file item not found for index:', nextFileIndex);
                 }
             }
         }, 300));

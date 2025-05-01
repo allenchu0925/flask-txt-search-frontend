@@ -5,15 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TXT 檔案搜尋系統 v1.2.0</title>
     <script type="module">
-        import * as OpenCC from '/opencc-js.js';
-
-        // 將 OpenCC 附加到全局範圍，以便後續程式碼使用
-        window.OpenCC = OpenCC;
-
-        // 初始化繁簡轉換器
-        window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
-        window.converterToTraditional = OpenCC.Converter({ from: 'cn', to: 'tw' });
-    </script>
+    import * as OpenCC from 'https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/esm-lib/core.js';
+    window.OpenCC = OpenCC;
+    window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
+    window.converterToTraditional = OpenCC.Converter({ from: 'cn', to: 'tw' });
+</script>
     <style>
         body {
             font-family: Arial, sans-serif;

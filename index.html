@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗 檔案搜尋系統 v1.0.10</title>
+    <title>TXT 檔案搜尋系統 v1.0.9</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -121,7 +121,7 @@
             font-weight: bold;
         }
         .bracket-content {
-            color: #0000FF; /* 括號內容用藍色顯示 */
+            color: #66b3ff; /* 統一使用深色模式的藍色 */
         }
         .txt-list div {
             padding: 10px 15px 10px 0px;
@@ -192,9 +192,6 @@
         }
         body.dark-mode .highlight.focused {
             background-color: #999900;
-        }
-        body.dark-mode .bracket-content {
-            color: #66b3ff; /* 深色模式下括號內容用淺藍色 */
         }
         /* Loading Spinner */
         @keyframes spin {
@@ -514,7 +511,7 @@
 
         const escapeHTML = (str) => {
             if (typeof str !== 'string') return String(str);
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            const map = { '&': '&', '<': '<', '>': '>', '"': '"', "'": ''' };
             return str.replace(/[&<>"']/g, (m) => map[m]);
         };
 

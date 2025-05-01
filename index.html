@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.1.5</title>
+    <title>TXT 檔案搜尋系統 v1.1.6</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.3/dist/umd/opencc-js.min.js"></script>
     <style>
         body {
@@ -330,7 +330,7 @@
             };
         }
 
-        // 螢屏旋轉時重新計算高度
+        // 螢幕旋轉時重新計算高度
         function adjustLayout() {
             const viewportHeight = window.innerHeight;
             const resultsSection = document.querySelector('.results-section');
@@ -356,7 +356,7 @@
         // 初始調整佈局
         adjustLayout();
 
-        // 監聽螢屏旋轉和視窗大小變化
+        // 監聽螢幕旋轉和視窗大小變化
         window.addEventListener('resize', adjustLayout);
         window.addEventListener('orientationchange', adjustLayout);
 
@@ -425,7 +425,6 @@
         });
 
         searchButton.addEventListener('click', debounce(async () => {
-            console.log('Search button clicked'); // 記錄按鈕點擊
             let input = searchInput.value.trim();
             if (!input) {
                 alert(convertText("請輸入要搜尋的文字。"));
@@ -434,8 +433,6 @@
 
             // 如果是簡體模式，將輸入轉為繁體以傳給伺服器
             const searchTextForServer = isSimplified ? converterToTraditional(input) : input;
-            console.log('Search input (original):', input);
-            console.log('Search input (for server):', searchTextForServer);
 
             txtList.innerHTML = `<p class="dynamic" style="padding-left: 0; color: #777;"><span class="loading-spinner"></span>${convertText('搜尋中...（可能需要幾秒，請稍候）')}</p>`;
             txtContent.innerHTML = `<p class="dynamic" style="color: #777;">${convertText('請選擇左側的 TXT 檔案以顯示內容')}</p>`;
@@ -458,7 +455,6 @@
             }, 10000); // 10 秒超時
 
             try {
-                console.log('Sending fetch request to:', `${backendBaseUrl}/search`);
                 const response = await fetch(`${backendBaseUrl}/search`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -467,14 +463,12 @@
                 });
 
                 clearTimeout(timeoutId);
-                console.log('Fetch response received:', response);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
-                console.log('Search results:', data);
                 txtList.innerHTML = '';
                 searchResults = data;
 
@@ -494,7 +488,6 @@
         }, 300));
 
         function renderSearchResults(input) {
-            console.log('Rendering search results:', searchResults);
             txtList.innerHTML = '';
             searchResults.forEach((result, index) => {
                 const item = document.createElement('div');
@@ -507,7 +500,6 @@
                 });
                 txtList.appendChild(item);
             });
-            console.log('Search results rendered');
         }
 
         function selectFile(itemElement, fileName, searchText, fileIndex, initialHighlightIndex) {
@@ -541,8 +533,7 @@
                 })
                 .then(data => {
                     fullText = String(data.content || "").replace(/<br\s*\/?>/gi, '\n');
-                    fullText = convertText(fullText);
-                    console.log('載入的 fullText:', fullText.substring(0, 100) + '...');
+                    fullText = convertText(fullText); // 轉換檔案內容
                     currentHighlights = [];
                     currentIndex = 0;
 
@@ -554,7 +545,6 @@
                             currentHighlights.push(match.index);
                         }
                     }
-                    console.log('currentHighlights:', currentHighlights);
 
                     if (currentHighlights.length > 0) {
                         currentIndex = Math.min(Math.max(initialHighlightIndex, 0), currentHighlights.length - 1);
@@ -577,7 +567,7 @@
 
         const escapeHTML = (str) => {
             if (typeof str !== 'string') return String(str);
-            const map = { '&': '&', '<': '<', '>': '>', '"': '"', "'": ''' };
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
             return str.replace(/[&<>"']/g, (m) => map[m]);
         };
 
@@ -605,15 +595,14 @@
         function updateStatus() {
             const fileNameDisplay = currentFileName ? currentFileName.replace(/\.[^/.]+$/, "") : convertText('檔名');
             if (currentHighlights.length > 0) {
-                status.textContent = `${currentIndex + 1}/${currentHighlights.length} (${fileNameDisplay})`;
+                status.textContent = `${currentIndex + 1}/${currentHighlights.length} (${escapeHTML(fileNameDisplay)})`;
             } else {
-                status.textContent = `0/0 (${fileNameDisplay})`;
+                status.textContent = `0/0 (${escapeHTML(fileNameDisplay)})`;
             }
         }
 
         function getContextAroundHighlight() {
             if (!fullText || currentHighlights.length === 0 || currentIndex < 0 || currentIndex >= currentHighlights.length) {
-                console.log('無法獲取上下文：fullText 或 currentHighlights 無效');
                 return '';
             }
 
@@ -636,7 +625,6 @@
             });
 
             if (sentences.length === 0) {
-                console.log('sentences 為空，返回 fullText');
                 return fullText;
             }
 
@@ -651,13 +639,11 @@
             }
 
             if (currentSentenceIndex === -1) {
-                console.log('未找到高亮詞所在句子，返回 fullText');
                 return fullText;
             }
 
             const startIndex = Math.max(0, currentSentenceIndex - 20);
             const endIndex = Math.min(sentences.length, currentSentenceIndex + 21);
-            console.log(`複製範圍：從第 ${startIndex} 句到第 ${endIndex} 句`);
             return sentences.slice(startIndex, endIndex).join('\n');
         }
 
@@ -774,5 +760,6 @@
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938deb715b7cb022',t:'MTc0NjA4ODI1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938e3e37c895bd00',t:'MTc0NjA5MTY0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938e74cb2cbce58e',t:'MTc0NjA5Mzg4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

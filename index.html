@@ -3,21 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 檔案搜尋系統 v1.1.9</title>
-    <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.3/dist/umd/opencc-js.min.js" onerror="loadFallbackOpenCC()"></script>
-    <script>
-        // 後備載入 OpenCC 庫
-        function loadFallbackOpenCC() {
-            console.log('Primary OpenCC CDN failed, attempting fallback...');
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/opencc-js@1.0.3/dist/umd/opencc-js.min.js';
-            script.onerror = () => {
-                console.error('Fallback OpenCC CDN also failed. OpenCC functionality will be disabled.');
-                alert('無法載入 OpenCC 庫，繁簡轉換功能將不可用。請檢查網路連線或稍後再試。');
-                document.getElementById('langToggle').style.display = 'none';
-            };
-            document.head.appendChild(script);
-        }
+    <title>TXT 檔案搜尋系統 v1.2.0</title>
+    <script type="module">
+        import * as OpenCC from '/opencc-js.js';
+
+        // 將 OpenCC 附加到全局範圍，以便後續程式碼使用
+        window.OpenCC = OpenCC;
+
+        // 初始化繁簡轉換器
+        window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
+        window.converterToTraditional = OpenCC.Converter({ from: 'cn', to: 'tw' });
     </script>
     <style>
         body {
@@ -138,7 +133,7 @@
             font-weight: bold;
         }
         .bracket-content {
-            color: #0078d7; /* 淺色模式下的括號顏色 */
+            color: #0078d7;
         }
         .txt-list div {
             padding: 10px 15px 10px 0px;
@@ -167,7 +162,6 @@
         .input-section button:active {
             background-color: #003087;
         }
-        /* Dark Mode Styles */
         body.dark-mode {
             background-color: #1a1a1a;
             color: #ffffff;
@@ -211,9 +205,8 @@
             background-color: #999900;
         }
         body.dark-mode .bracket-content {
-            color: #66b3ff; /* 深色模式下的括號顏色 */
+            color: #66b3ff;
         }
-        /* Loading Spinner */
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -229,7 +222,6 @@
             margin-right: 5px;
             vertical-align: middle;
         }
-        /* Mobile Styles */
         @media (max-width: 768px) {
             main {
                 flex-direction: column;
@@ -327,26 +319,19 @@
         let selectedItem = null;
         let touchStartX = 0;
 
-        // 定義後端 API 的基礎 URL
         const backendBaseUrl = `https://flask-txt-search.onrender.com`;
 
-        // 繁簡轉換器初始化（檢查 OpenCC 是否存在）
-        let converterToSimplified = null;
-        let converterToTraditional = null;
+        let converterToSimplified = window.converterToSimplified;
+        let converterToTraditional = window.converterToTraditional;
         let isSimplified = localStorage.getItem('isSimplified') === 'true';
 
-        // 檢查 OpenCC 是否已載入
-        if (typeof OpenCC !== 'undefined') {
-            converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' }); // 繁轉簡
-            converterToTraditional = OpenCC.Converter({ from: 'cn', to: 'tw' }); // 簡轉繁
-        } else {
+        if (typeof window.OpenCC === 'undefined') {
             console.error('OpenCC 庫未正確載入，繁簡轉換功能將不可用。');
-            alert('繁簡轉換功能無法使用，因為 OpenCC 庫未正確載入。請檢查網路連線或稍後再試。');
-            langToggle.style.display = 'none'; // 隱藏繁簡切換按鈕
-            isSimplified = false; // 强制使用繁體模式
+            alert('繁簡轉換功能無法使用，因為 OpenCC 庫未正確載入。請檢查 opencc-js.js 是否正確放置於專案目錄並上傳至 Netlify。');
+            langToggle.style.display = 'none';
+            isSimplified = false;
         }
 
-        // 防抖函數
         function debounce(func, wait) {
             let timeout;
             return function (...args) {
@@ -355,7 +340,6 @@
             };
         }
 
-        // 螢幕旋轉時重新計算高度
         function adjustLayout() {
             const viewportHeight = window.innerHeight;
             const resultsSection = document.querySelector('.results-section');
@@ -378,14 +362,10 @@
             }
         }
 
-        // 初始調整佈局
         adjustLayout();
-
-        // 監聽螢幕旋轉和視窗大小變化
         window.addEventListener('resize', adjustLayout);
         window.addEventListener('orientationchange', adjustLayout);
 
-        // Theme Toggle Logic
         const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
         const isDarkMode = localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && prefersDarkScheme.matches);
         if (isDarkMode) {
@@ -406,7 +386,6 @@
             applyLanguageConversion();
         });
 
-        // Language Toggle Logic (繁簡切換)
         if (isSimplified) {
             langToggle.textContent = '繁體模式';
             applyLanguageConversion();
@@ -425,7 +404,7 @@
         });
 
         function applyLanguageConversion() {
-            if (!converterToSimplified || !converterToTraditional) return; // 如果 OpenCC 未載入，跳過轉換
+            if (!converterToSimplified || !converterToTraditional) return;
             const elementsToConvert = document.querySelectorAll('p:not(.dynamic), button, input[placeholder]');
             elementsToConvert.forEach(el => {
                 if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
@@ -439,11 +418,10 @@
 
         function convertText(text) {
             if (!text || typeof text !== 'string') return text;
-            if (!converterToSimplified || !converterToTraditional) return text; // 如果 OpenCC 未載入，直接返回原文字
+            if (!converterToSimplified || !converterToTraditional) return text;
             return isSimplified ? converterToSimplified(text) : converterToTraditional(text);
         }
 
-        // Allow search on Enter key press
         searchInput.addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
@@ -452,14 +430,13 @@
         });
 
         searchButton.addEventListener('click', debounce(async () => {
-            console.log('Search button clicked'); // 記錄按鈕點擊
+            console.log('Search button clicked');
             let input = searchInput.value.trim();
             if (!input) {
                 alert(convertText("請輸入要搜尋的文字。"));
                 return;
             }
 
-            // 如果是簡體模式，將輸入轉為繁體以傳給伺服器
             const searchTextForServer = (converterToTraditional && isSimplified) ? converterToTraditional(input) : input;
             console.log('Search input (original):', input);
             console.log('Search input (for server):', searchTextForServer);
@@ -475,14 +452,13 @@
             selectedItem = null;
             searchResults = [];
 
-            // 設置 fetch 超時
             const controller = new AbortController();
             const timeoutId = setTimeout(() => {
                 controller.abort();
                 txtList.innerHTML = `<p class="dynamic" style="padding-left: 0; color: #cc0000; font-weight:bold;">${convertText('搜尋超時，後端服務可能正在休眠或無法連線，請')}<a href="https://flask-txt-search.onrender.com" target="_blank">${convertText('點擊此處喚醒後端服務')}</a>，${convertText('然後重新搜尋。')}</p>`;
                 txtContent.innerHTML = `<p class="dynamic" style="color: #cc0000;">${convertText('無法執行搜尋，請檢查後端服務狀態。')}</p>`;
                 status.textContent = convertText('搜尋超時');
-            }, 10000); // 10 秒超時
+            }, 10000);
 
             try {
                 console.log('Sending fetch request to:', `${backendBaseUrl}/search`);

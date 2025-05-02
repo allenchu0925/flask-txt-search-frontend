@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗 文字檔搜尋系統 v1.2.14</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.15</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
@@ -604,7 +604,10 @@
             const controller = new AbortController();
             const timeoutId = setTimeout(() => {
                 controller.abort();
-                txtContent.innerHTML = `<p class="dynamic" style="color: #cc0000;">${convertText('無法載入或顯示檔案')} "${escapeHTML(fileName)}" ${convertText('的內容，後端服務可能正在休眠或無法連線，請')}<a href="https://flask-txt-search.onrender.com" target="_blank">${convertText('點擊此處喚醒後端服務')}</a>，${convertText('然後重新載入。')}</p>`;
+                const errorMsg = convertText('無法載入或顯示檔案') + ` "${escapeHTML(fileName)}" ` + convertText('的內容，後端服務可能正在休眠或無法連線，請') + 
+                                `<a href="https://flask-txt-search.onrender.com" target="_blank">${convertText('點擊此處喚醒後端服務')}</a>` + 
+                                convertText('然後重新載入。');
+                txtContent.innerHTML = `<p class="dynamic" style="color: #cc0000;">${errorMsg}</p>`;
                 status.textContent = `${convertText('載入超時')} (${currentFileName.replace(/\.[^/.]+$/, "")})`;
                 currentHighlights = [];
                 updateStatus();
@@ -647,7 +650,10 @@
                 .catch(error => {
                     clearTimeout(timeoutId);
                     console.error('載入 TXT 內容失敗:', error);
-                    txtContent.innerHTML = `<p class="dynamic" style="color: #cc0000;">${convertText('無法載入或顯示檔案')} "${escapeHTML(fileName)}" ${convertText('的內容，後端服務可能正在休眠或無法連線，請')}<a href="https://flask-txt-search.onrender.com" target="_blank">${convertText('點擊此處喚醒後端服務')}</a>，${convertText('然後重新載入。')}</p>`;
+                    const errorMsg = convertText('無法載入或顯示檔案') + ` "${escapeHTML(fileName)}" ` + convertText('的內容，後端服務可能正在休眠或無法連線，請') + 
+                                    `<a href="https://flask-txt-search.onrender.com" target="_blank">${convertText('點擊此處喚醒後端服務')}</a>` + 
+                                    convertText('然後重新載入。');
+                    txtContent.innerHTML = `<p class="dynamic" style="color: #cc0000;">${errorMsg}</p>`;
                     status.textContent = `${convertText('載入失敗')} (${currentFileName.replace(/\.[^/.]+$/, "")})`;
                     currentHighlights = [];
                     updateStatus();
@@ -661,7 +667,7 @@
                 '<': '<',
                 '>': '>',
                 '"': '"',
-                "'": '''
+                "'": '\''
             };
             return str.replace(/[&<>"']/g, (m) => map[m]);
         };
@@ -669,7 +675,6 @@
         function updateContent(searchText) {
             let htmlContent = fullText;
 
-            // 高亮搜尋詞
             const escapedSearchText = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
             if (escapedSearchText) {
                 const simplifiedSearchText = converterToSimplified ? converterToSimplified(escapedSearchText) : escapedSearchText;
@@ -678,11 +683,9 @@
                 htmlContent = htmlContent.replace(regex, '<span class="highlight">$1</span>');
             }
 
-            // 高亮括號內容
             const bracketRegex = /(?:（[^）]*）|\([^()]*\))/g;
             htmlContent = htmlContent.replace(bracketRegex, '<span class="bracket-content">$&</span>');
 
-            // 將純文字部分進行轉義，確保不影響 <span> 標籤
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlContent;
             const childNodes = tempDiv.childNodes;

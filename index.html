@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗 文字檔搜尋系統 v1.2.15</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.20</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
@@ -13,7 +13,7 @@
         html, body {
             margin: 0;
             padding: 0;
-            height: 100vh;
+            height: 100%;
             overflow: hidden;
         }
         body {
@@ -21,13 +21,15 @@
             background-color: #f9f9f9;
             display: flex;
             flex-direction: column;
-            transition: background-color 0.3s, color 0.3s;
+            height: 100%;
+            width: 100%;
         }
         main {
             display: flex;
             flex: 1;
-            height: 100vh;
+            height: 100%;
             overflow: hidden;
+            width: 100%;
         }
         .results-section {
             flex: 1;
@@ -77,12 +79,13 @@
         }
         .txt-content-section {
             flex: 3;
-            overflow: hidden;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             background-color: white;
             position: relative;
             height: 100%;
+            width: 100%;
         }
         .controls {
             display: flex;
@@ -125,13 +128,14 @@
         }
         .txt-content {
             flex: 1;
-            padding: 20px;
+            padding: 10px 20px;
             background-color: white;
             overflow-y: auto;
             font-size: 16px;
             line-height: 1.6;
             transition: height 0.3s;
             white-space: pre-wrap;
+            box-sizing: border-box;
         }
         .highlight {
             background-color: yellow;
@@ -249,9 +253,6 @@
             .txt-list {
                 max-height: calc(50vh - 100px);
             }
-            .txt-content {
-                max-height: calc(50vh - 60px);
-            }
             .input-section input {
                 font-size: 16px;
                 padding: 10px;
@@ -285,10 +286,7 @@
                 height: 0;
             }
             .collapsed .txt-content-section {
-                height: 100vh;
-            }
-            .collapsed .txt-content {
-                max-height: calc(100vh - 60px);
+                height: 100%;
             }
         }
     </style>
@@ -336,6 +334,7 @@
         const collapseButton = document.getElementById('collapseButton');
         const inputSection = document.querySelector('.input-section');
         const resultsSection = document.querySelector('.results-section');
+        const txtContentSection = document.querySelector('.txt-content-section');
 
         let searchResults = [];
         let currentFileIndex = -1;
@@ -388,10 +387,8 @@
         }
 
         function adjustLayout() {
-            const viewportHeight = window.innerHeight;
-            const txtContentSection = document.querySelector('.txt-content-section');
+            const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
             const txtList = document.querySelector('.txt-list');
-            const txtContent = document.querySelector('.txt-content');
             const controls = document.querySelector('.controls');
 
             if (window.innerWidth <= 768) {
@@ -399,9 +396,11 @@
                     resultsSection.style.height = '0';
                     inputSection.style.display = 'none';
                     txtList.style.display = 'none';
-                    txtContentSection.style.height = '100vh';
+                    txtContentSection.style.height = `${viewportHeight}px`;
                     controls.classList.add('fixed');
                     controls.style.top = '0';
+                    const controlsHeight = controls.offsetHeight;
+                    txtContent.style.height = `${viewportHeight - controlsHeight}px`;
                 } else {
                     resultsSection.style.height = `${viewportHeight * 0.5}px`;
                     inputSection.style.display = 'block';
@@ -409,15 +408,15 @@
                     txtContentSection.style.height = `${viewportHeight * 0.5}px`;
                     controls.classList.remove('fixed');
                     controls.style.top = '0';
+                    const controlsHeight = controls.offsetHeight;
+                    txtContent.style.height = `${viewportHeight * 0.5 - controlsHeight}px`;
                 }
-                const controlsHeight = controls.offsetHeight;
-                txtContent.style.maxHeight = isCollapsed ? `calc(100vh - ${controlsHeight}px)` : `${viewportHeight * 0.5 - controlsHeight}px`;
             } else {
                 resultsSection.style.height = 'auto';
                 inputSection.style.display = 'block';
                 txtList.style.display = 'block';
                 txtContentSection.style.height = 'auto';
-                txtContent.style.maxHeight = 'none';
+                txtContent.style.height = 'auto';
                 controls.classList.remove('fixed');
             }
             updateCollapseButtonVisibility();
@@ -425,6 +424,8 @@
 
         window.addEventListener('resize', adjustLayout);
         window.addEventListener('orientationchange', adjustLayout);
+        window.addEventListener('scroll', adjustLayout); // 處理瀏覽器工具列隱藏/顯示
+        window.visualViewport?.addEventListener('resize', adjustLayout); // 監聽 visualViewport 變化
 
         const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
         const isDarkMode = localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && prefersDarkScheme.matches);
@@ -622,7 +623,6 @@
                 .then(data => {
                     fullText = String(data.content || "").replace(/<br\s*\/?>/gi, '\n');
                     fullText = convertText(fullText);
-                    console.log('載入的 fullText:', fullText.substring(0, 100) + '...');
                     currentHighlights = [];
                     currentIndex = 0;
 
@@ -636,7 +636,6 @@
                             currentHighlights.push(match.index);
                         }
                     }
-                    console.log('After loading content - currentHighlights:', currentHighlights, 'searchText:', searchText);
 
                     if (currentHighlights.length > 0) {
                         currentIndex = Math.min(Math.max(initialHighlightIndex, 0), currentHighlights.length - 1);
@@ -758,7 +757,7 @@
             const highlightPos = currentHighlights[currentIndex];
             let currentSentenceIndex = -1;
 
-            for (let i = 0; i < sentenceCharPositions.length; i++) {
+            for (let i = 0; i <  sentenceCharPositions.length; i++) {
                 if (highlightPos >= sentenceCharPositions[i] && (i === sentenceCharPositions.length - 1 || highlightPos < sentenceCharPositions[i + 1])) {
                     currentSentenceIndex = i;
                     break;

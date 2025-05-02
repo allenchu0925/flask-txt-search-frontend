@@ -3,19 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗 文字檔搜尋系統 v1.2.11</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.12</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
         window.converterToTraditional = OpenCC.Converter({ from: 'cn', to: 'tw' });
     </script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        html, body {
             margin: 0;
             padding: 0;
-            background-color: #f9f9f9;
             height: 100vh;
+            overflow: hidden;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
             display: flex;
             flex-direction: column;
             transition: background-color 0.3s, color 0.3s;
@@ -23,8 +26,8 @@
         main {
             display: flex;
             flex: 1;
+            height: 100vh;
             overflow: hidden;
-            height: 100%;
         }
         .results-section {
             flex: 1;
@@ -91,7 +94,13 @@
             top: 0;
             z-index: 10;
             box-sizing: border-box;
-            transition: top 0.3s;
+            transition: position 0.3s, top 0.3s;
+        }
+        .controls.fixed {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            left: 0;
         }
         .status {
             font-size: 14px;
@@ -271,11 +280,14 @@
             .collapsed .txt-list {
                 display: none;
             }
+            .collapsed .results-section {
+                height: 0;
+            }
+            .collapsed .txt-content-section {
+                height: 100vh;
+            }
             .collapsed .txt-content {
                 max-height: calc(100vh - 60px);
-            }
-            .collapsed .controls {
-                top: 0 !important;
             }
         }
     </style>
@@ -386,7 +398,12 @@
                 txtList.style.maxHeight = isCollapsed ? '0' : `${viewportHeight * 0.5 - 100}px`;
                 const controlsHeight = controls.offsetHeight;
                 txtContent.style.maxHeight = isCollapsed ? `calc(100vh - ${controlsHeight}px)` : `${viewportHeight * 0.5 - controlsHeight}px`;
+
                 if (isCollapsed) {
+                    controls.classList.add('fixed');
+                    controls.style.top = '0';
+                } else {
+                    controls.classList.remove('fixed');
                     controls.style.top = '0';
                 }
             } else {
@@ -394,6 +411,7 @@
                 txtContentSection.style.height = 'auto';
                 txtList.style.maxHeight = 'none';
                 txtContent.style.maxHeight = 'none';
+                controls.classList.remove('fixed');
             }
             updateCollapseButtonVisibility();
         }
@@ -897,7 +915,7 @@
             isCollapsed = !isCollapsed;
             document.body.classList.toggle('collapsed', isCollapsed);
             collapseButton.textContent = isCollapsed ? '展開' : '收起';
-            // 強制刷新布局以確保 sticky 生效
+            // 強制刷新布局以確保 fixed 或 sticky 生效
             setTimeout(() => {
                 window.scrollTo(0, 0);
                 adjustLayout();

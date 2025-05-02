@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗 文字檔搜尋系統 v1.2.9</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.11</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
@@ -24,6 +24,7 @@
             display: flex;
             flex: 1;
             overflow: hidden;
+            height: 100%;
         }
         .results-section {
             flex: 1;
@@ -77,6 +78,7 @@
             flex-direction: column;
             background-color: white;
             position: relative;
+            height: 100%;
         }
         .controls {
             display: flex;
@@ -87,7 +89,7 @@
             flex-shrink: 0;
             position: sticky;
             top: 0;
-            z-index: 1;
+            z-index: 10;
             box-sizing: border-box;
             transition: top 0.3s;
         }
@@ -143,7 +145,7 @@
             transition: background-color 0.2s;
         }
         .txt-list div:last-child {
-            border-bottom: null;
+            border-bottom: none;
         }
         .txt-list div:hover {
             background-color: #e6f2ff;
@@ -384,6 +386,9 @@
                 txtList.style.maxHeight = isCollapsed ? '0' : `${viewportHeight * 0.5 - 100}px`;
                 const controlsHeight = controls.offsetHeight;
                 txtContent.style.maxHeight = isCollapsed ? `calc(100vh - ${controlsHeight}px)` : `${viewportHeight * 0.5 - controlsHeight}px`;
+                if (isCollapsed) {
+                    controls.style.top = '0';
+                }
             } else {
                 resultsSection.style.height = 'auto';
                 txtContentSection.style.height = 'auto';
@@ -892,7 +897,11 @@
             isCollapsed = !isCollapsed;
             document.body.classList.toggle('collapsed', isCollapsed);
             collapseButton.textContent = isCollapsed ? '展開' : '收起';
-            adjustLayout();
+            // 強制刷新布局以確保 sticky 生效
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+                adjustLayout();
+            }, 0);
         }
 
         function updateCollapseButtonVisibility() {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗 文字檔搜尋系統 v1.2.25</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.26</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
@@ -479,8 +479,14 @@
             });
         }
 
-        window.addEventListener('resize', adjustLayout);
-        window.addEventListener('orientationchange', adjustLayout);
+        window.addEventListener('resize', () => {
+            adjustLayout();
+            updateCollapseButtonVisibility();
+        });
+        window.addEventListener('orientationchange', () => {
+            adjustLayout();
+            updateCollapseButtonVisibility();
+        });
 
         const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
         const isDarkMode = localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && prefersDarkScheme.matches);
@@ -736,37 +742,6 @@
             console.log('updateContent called - searchText:', searchText);
             let htmlContent = fullText;
 
-            // 限制顯示的內容行數，只顯示高亮詞前後 50 行
-            const lines = fullText.split('\n');
-            const highlightLineIndices = [];
-
-            // 計算每一行的字符起始位置
-            let charCount = 0;
-            const lineCharPositions = lines.map(line => {
-                const start = charCount;
-                charCount += line.length + 1; // +1 為了換行符
-                return start;
-            });
-
-            // 找到高亮詞所在的行
-            currentHighlights.forEach(highlightPos => {
-                for (let i = 0; i < lineCharPositions.length; i++) {
-                    if (highlightPos >= lineCharPositions[i] && (i === lineCharPositions.length - 1 || highlightPos < lineCharPositions[i + 1])) {
-                        highlightLineIndices.push(i);
-                        break;
-                    }
-                }
-            });
-
-            console.log('Highlight line indices:', highlightLineIndices);
-
-            const currentHighlightLine = highlightLineIndices[currentIndex] || 0;
-            const startLine = Math.max(0, currentHighlightLine - 50);
-            const endLine = Math.min(lines.length, currentHighlightLine + 50);
-            const visibleLines = lines.slice(startLine, endLine);
-            htmlContent = visibleLines.join('\n');
-            console.log('Visible lines count:', visibleLines.length, 'startLine:', startLine, 'endLine:', endLine);
-
             const escapedSearchText = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
             if (escapedSearchText) {
                 const simplifiedSearchText = converterToSimplified ? converterToSimplified(escapedSearchText) : escapedSearchText;
@@ -818,20 +793,10 @@
 
                     txtContent.scrollTo({
                         top: adjustedScroll,
-                        behavior: 'smooth'
+                        behavior: 'instant'
                     });
                     console.log('Scrolled to highlight - offsetTop:', offsetTop, 'centerOffset:', centerOffset, 'adjustedScroll:', adjustedScroll);
                     console.log('txtContent dimensions - scrollHeight:', txtContent.scrollHeight, 'clientHeight:', txtContent.clientHeight);
-
-                    // 檢查高亮詞是否在可見範圍內
-                    setTimeout(() => {
-                        const newRect = focusedHighlight.getBoundingClientRect();
-                        const newContainerRect = txtContent.getBoundingClientRect();
-                        if (newRect.top < newContainerRect.top || newRect.bottom > newContainerRect.bottom) {
-                            focusedHighlight.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                            console.log('Highlight not in view, adjusted with scrollIntoView');
-                        }
-                    }, 500);
                 });
             }
 
@@ -1035,7 +1000,8 @@
 
         function updateCollapseButtonVisibility() {
             const isMobile = window.innerWidth <= 768;
-            if (isMobile && searchResults.length > 0) {
+            const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+            if (isMobile && isPortrait && searchResults.length > 0) {
                 collapseButton.style.display = 'inline-flex';
             } else {
                 collapseButton.style.display = 'none';

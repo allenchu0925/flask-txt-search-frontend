@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗 文字檔搜尋系統 v1.2.24</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.25</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
@@ -22,6 +22,7 @@
             display: block;
             height: 100vh;
             overflow: hidden;
+            box-sizing: border-box;
         }
         .results-section {
             width: 25%;
@@ -30,10 +31,12 @@
             height: 100%;
             float: left;
             overflow: hidden;
+            box-sizing: border-box;
         }
         .input-section {
             padding: 20px;
             border-bottom: 1px solid #ccc;
+            box-sizing: border-box;
         }
         .input-section input {
             padding: 8px;
@@ -64,6 +67,7 @@
             overflow-y: auto;
             padding: 10px 0px 10px 20px;
             height: calc(100% - 100px);
+            box-sizing: border-box;
         }
         .txt-content-section {
             width: 75%;
@@ -71,6 +75,7 @@
             background-color: white;
             height: 100%;
             overflow: hidden;
+            box-sizing: border-box;
         }
         .controls {
             display: flex;
@@ -120,6 +125,7 @@
             white-space: pre-wrap;
             box-sizing: border-box;
             height: calc(100% - 60px);
+            min-height: 200px;
         }
         .txt-content p {
             margin: 0;
@@ -244,6 +250,21 @@
             .txt-content {
                 height: calc(50vh - 60px);
             }
+            /* 橫放模式 */
+            @media (orientation: landscape) {
+                .results-section {
+                    height: 40vh;
+                }
+                .txt-content-section {
+                    height: 60vh;
+                }
+                .txt-list {
+                    height: calc(40vh - 100px);
+                }
+                .txt-content {
+                    height: calc(60vh - 60px);
+                }
+            }
             .input-section input {
                 font-size: 16px;
                 padding: 10px;
@@ -289,6 +310,21 @@
             .collapsed .txt-content {
                 height: calc(100vh - 60px);
             }
+            /* 橫放模式下收起後調整 */
+            @media (orientation: landscape) {
+                .collapsed .txt-content-section {
+                    height: calc(100vh - 60px);
+                }
+                .collapsed .txt-content {
+                    height: calc(100vh - 60px);
+                }
+            }
+        }
+        /* 清除浮動 */
+        main::after {
+            content: "";
+            display: block;
+            clear: both;
         }
     </style>
 </head>
@@ -410,12 +446,20 @@
                 } else {
                     inputSection.style.display = 'block';
                     txtList.style.display = 'block';
-                    resultsSection.style.height = `${viewportHeight * 0.5}px`;
-                    txtContentSection.style.height = `${viewportHeight * 0.5}px`;
-                    txtList.style.height = `${viewportHeight * 0.5 - 100}px`;
+                    if (window.matchMedia("(orientation: landscape)").matches) {
+                        resultsSection.style.height = `${viewportHeight * 0.4}px`;
+                        txtContentSection.style.height = `${viewportHeight * 0.6}px`;
+                        txtList.style.height = `${viewportHeight * 0.4 - 100}px`;
+                        txtContent.style.height = `${viewportHeight * 0.6 - controlsHeight}px`;
+                        console.log(`Expanded mode (landscape): viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight * 0.6 - controlsHeight}`);
+                    } else {
+                        resultsSection.style.height = `${viewportHeight * 0.5}px`;
+                        txtContentSection.style.height = `${viewportHeight * 0.5}px`;
+                        txtList.style.height = `${viewportHeight * 0.5 - 100}px`;
+                        txtContent.style.height = `${viewportHeight * 0.5 - controlsHeight}px`;
+                        console.log(`Expanded mode (portrait): viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight * 0.5 - controlsHeight}`);
+                    }
                     controls.style.position = 'sticky';
-                    txtContent.style.height = `${viewportHeight * 0.5 - controlsHeight}px`;
-                    console.log(`Expanded mode: viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight * 0.5 - controlsHeight}`);
                 }
             } else {
                 inputSection.style.display = 'block';

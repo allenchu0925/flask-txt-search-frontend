@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗 文字檔搜尋系統 v1.2.13</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.14</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
@@ -690,38 +690,25 @@
 
             childNodes.forEach(node => {
                 if (node.nodeType === Node.TEXT_NODE) {
-                    // 對純文字節點進行轉義
                     parts.push(escapeHTML(node.textContent));
                 } else {
-                    // 保留 HTML 節點（例如 <span> 標籤）
                     parts.push(node.outerHTML || node.textContent);
                 }
             });
 
             htmlContent = parts.join('');
 
-            // 渲染內容
             txtContent.innerHTML = htmlContent;
 
-            // 找到高亮元素並瞬間定位
             const highlights = txtContent.getElementsByClassName('highlight');
             if (highlights.length > 0 && currentIndex >= 0 && currentIndex < highlights.length) {
                 const focusedHighlight = highlights[currentIndex];
                 focusedHighlight.classList.add('focused');
-
-                // 計算高亮元素相對於 txtContent 的偏移量
                 const rect = focusedHighlight.getBoundingClientRect();
                 const containerRect = txtContent.getBoundingClientRect();
                 const offsetTop = rect.top - containerRect.top + txtContent.scrollTop;
-
-                // 將高亮元素置中：計算偏移量，使高亮元素位於視窗中間
                 const centerOffset = offsetTop - (txtContent.clientHeight / 2) + (rect.height / 2);
-
-                // 瞬間定位（無動畫）
-                txtContent.scrollTo({
-                    top: centerOffset,
-                    behavior: 'auto'
-                });
+                txtContent.scrollTo({ top: centerOffset, behavior: 'auto' });
             }
 
             updateStatus();
@@ -827,7 +814,6 @@
                 return;
             }
 
-            console.log('Condition check: currentIndex < currentHighlights.length - 1', currentIndex < currentHighlights.length - 1);
             if (currentIndex < currentHighlights.length - 1) {
                 currentIndex++;
                 console.log('Incremented currentIndex to:', currentIndex);
@@ -922,11 +908,11 @@
             isCollapsed = !isCollapsed;
             document.body.classList.toggle('collapsed', isCollapsed);
             collapseButton.textContent = isCollapsed ? '展開' : '收起';
-            adjustLayout(); // 立即更新布局
+            adjustLayout();
             setTimeout(() => {
-                window.scrollTo(0, 0); // 強制刷新視口
-                adjustLayout(); // 再次確保布局正確
-            }, 100); // 延長至 100ms 以確保渲染
+                window.scrollTo(0, 0);
+                adjustLayout();
+            }, 100);
         }
 
         function updateCollapseButtonVisibility() {
@@ -937,15 +923,11 @@
                 collapseButton.textContent = isCollapsed ? '展開' : '收起';
             } else {
                 collapseButton.style.display = 'none';
-                if (isCollapsed) toggleCollapse(); // 不在條件下自動展開
+                if (isCollapsed) toggleCollapse();
             }
         }
 
         collapseButton.addEventListener('click', debounce(toggleCollapse, 300));
     </script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938ff4368be8dd21',t:'MTc0NjEwOTU4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93902d317ab1bd2f',t:'MTc0NjExMTkyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93904c321d12b054',t:'MTc0NjExMzE5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'939358c628f9adcb',t:'MTc0NjE0NTE2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

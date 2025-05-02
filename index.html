@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗 文字檔搜尋系統 v1.2.7</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.8</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
@@ -37,6 +37,7 @@
             padding: 20px;
             border-bottom: 1px solid #ccc;
             flex-shrink: 0;
+            transition: height 0.3s;
         }
         .input-section input {
             padding: 8px;
@@ -67,6 +68,7 @@
             overflow-y: auto;
             flex-grow: 1;
             padding: 10px 0px 10px 20px;
+            transition: height 0.3s;
         }
         .txt-content-section {
             flex: 3;
@@ -87,6 +89,7 @@
             top: 0;
             z-index: 1;
             box-sizing: border-box;
+            transition: top 0.3s;
         }
         .status {
             font-size: 14px;
@@ -115,7 +118,7 @@
             overflow-y: auto;
             font-size: 16px;
             line-height: 1.6;
-            transition: background-color 0.3s;
+            transition: height 0.3s;
             white-space: pre-wrap;
         }
         .highlight {
@@ -262,6 +265,16 @@
             #copyButton {
                 display: none;
             }
+            .collapsed .input-section,
+            .collapsed .txt-list {
+                display: none;
+            }
+            .collapsed .txt-content {
+                max-height: calc(100vh - 60px);
+            }
+            .collapsed .controls {
+                top: 0 !important;
+            }
         }
     </style>
 </head>
@@ -282,6 +295,7 @@
         </section>
         <section class="txt-content-section">
             <div class="controls">
+                <button id="collapseButton" style="display: none;">收起</button>
                 <button id="prevButton">向前</button>
                 <button id="nextButton">向後</button>
                 <button id="copyButton">複製內容</button>
@@ -304,6 +318,7 @@
         const searchInput = document.getElementById('searchInput');
         const themeToggle = document.getElementById('themeToggle');
         const langToggle = document.getElementById('langToggle');
+        const collapseButton = document.getElementById('collapseButton');
 
         let searchResults = [];
         let currentFileIndex = -1;
@@ -313,6 +328,7 @@
         let currentFileName = "";
         let selectedItem = null;
         let touchStartX = 0;
+        let isCollapsed = false;
 
         const backendBaseUrl = `https://flask-txt-search.onrender.com`;
 
@@ -334,6 +350,7 @@
                     }
 
                     adjustLayout();
+                    updateCollapseButtonVisibility();
                 }
             }, 100);
         });
@@ -362,17 +379,18 @@
             const controls = document.querySelector('.controls');
 
             if (window.innerWidth <= 768) {
-                resultsSection.style.height = `${viewportHeight * 0.5}px`;
-                txtContentSection.style.height = `${viewportHeight * 0.5}px`;
-                txtList.style.maxHeight = `${viewportHeight * 0.5 - 100}px`;
+                resultsSection.style.height = isCollapsed ? '0' : `${viewportHeight * 0.5}px`;
+                txtContentSection.style.height = isCollapsed ? '100vh' : `${viewportHeight * 0.5}px`;
+                txtList.style.maxHeight = isCollapsed ? '0' : `${viewportHeight * 0.5 - 100}px`;
                 const controlsHeight = controls.offsetHeight;
-                txtContent.style.maxHeight = `${viewportHeight * 0.5 - controlsHeight}px`;
+                txtContent.style.maxHeight = isCollapsed ? `calc(100vh - ${controlsHeight}px)` : `${viewportHeight * 0.5 - controlsHeight}px`;
             } else {
                 resultsSection.style.height = 'auto';
                 txtContentSection.style.height = 'auto';
                 txtList.style.maxHeight = 'none';
                 txtContent.style.maxHeight = 'none';
             }
+            updateCollapseButtonVisibility();
         }
 
         window.addEventListener('resize', adjustLayout);
@@ -510,6 +528,8 @@
                 txtContent.innerHTML = `<p class="dynamic" style="color: #cc0000;">${convertText('無法執行搜尋，請檢查後端服務狀態。')}</p>`;
                 status.textContent = convertText('搜尋錯誤');
             }
+            adjustLayout();
+            updateCollapseButtonVisibility();
         }, 300));
 
         function renderSearchResults(input) {
@@ -607,11 +627,11 @@
         const escapeHTML = (str) => {
             if (typeof str !== 'string') return String(str);
             const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;'
+                '&': '&',
+                '<': '<',
+                '>': '>',
+                '"': '"',
+                "'": '''
             };
             return str.replace(/[&<>"']/g, (m) => map[m]);
         };
@@ -867,6 +887,27 @@
             }
             document.body.removeChild(textArea);
         }
+
+        function toggleCollapse() {
+            isCollapsed = !isCollapsed;
+            document.body.classList.toggle('collapsed', isCollapsed);
+            collapseButton.textContent = isCollapsed ? '展開' : '收起';
+            adjustLayout();
+        }
+
+        function updateCollapseButtonVisibility() {
+            const isMobile = window.innerWidth <= 768;
+            const hasSearchResults = searchResults.length > 0;
+            if (isMobile && hasSearchResults) {
+                collapseButton.style.display = 'inline-block';
+                collapseButton.textContent = isCollapsed ? '展開' : '收起';
+            } else {
+                collapseButton.style.display = 'none';
+                if (isCollapsed) toggleCollapse(); // 如果不在條件下，自動展開
+            }
+        }
+
+        collapseButton.addEventListener('click', debounce(toggleCollapse, 300));
     </script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'938ff4368be8dd21',t:'MTc0NjEwOTU4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93902d317ab1bd2f',t:'MTc0NjExMTkyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>

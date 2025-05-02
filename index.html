@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗 文字檔搜尋系統 v1.2.26</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.27</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
@@ -246,6 +246,7 @@
             }
             .txt-list {
                 height: calc(50vh - 100px);
+                min-height: 100px;
             }
             .txt-content {
                 height: calc(50vh - 60px);
@@ -253,16 +254,47 @@
             /* 橫放模式 */
             @media (orientation: landscape) {
                 .results-section {
-                    height: 40vh;
+                    height: 50vh;
                 }
                 .txt-content-section {
-                    height: 60vh;
+                    height: 50vh;
+                }
+                .input-section {
+                    padding: 10px;
+                }
+                .input-section input {
+                    padding: 5px;
+                    font-size: 14px;
+                    margin-bottom: 5px;
+                }
+                .input-section .button-group {
+                    gap: 5px;
+                }
+                .input-section button {
+                    padding: 5px 10px;
+                    font-size: 12px;
+                }
+                .input-section #searchButton::after {
+                    content: "確";
+                }
+                .input-section #langToggle::after {
+                    content: "簡";
+                }
+                .input-section #themeToggle::after {
+                    content: "淺";
                 }
                 .txt-list {
-                    height: calc(40vh - 100px);
+                    height: calc(50vh - 70px);
+                    min-height: 100px;
+                }
+                .txt-list div {
+                    padding: 5px 10px 5px 0px;
+                    font-size: 14px;
+                    white-space: normal;
+                    word-break: break-all;
                 }
                 .txt-content {
-                    height: calc(60vh - 60px);
+                    height: calc(50vh - 60px);
                 }
             }
             .input-section input {
@@ -447,16 +479,14 @@
                     inputSection.style.display = 'block';
                     txtList.style.display = 'block';
                     if (window.matchMedia("(orientation: landscape)").matches) {
-                        resultsSection.style.height = `${viewportHeight * 0.4}px`;
-                        txtContentSection.style.height = `${viewportHeight * 0.6}px`;
-                        txtList.style.height = `${viewportHeight * 0.4 - 100}px`;
-                        txtContent.style.height = `${viewportHeight * 0.6 - controlsHeight}px`;
-                        console.log(`Expanded mode (landscape): viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight * 0.6 - controlsHeight}`);
+                        resultsSection.style.height = `${viewportHeight * 0.5}px`;
+                        txtContentSection.style.height = `${viewportHeight * 0.5}px`;
+                        txtList.style.height = `${viewportHeight * 0.5 - 70}px`;
+                        console.log(`Expanded mode (landscape): viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight * 0.5 - controlsHeight}`);
                     } else {
                         resultsSection.style.height = `${viewportHeight * 0.5}px`;
                         txtContentSection.style.height = `${viewportHeight * 0.5}px`;
                         txtList.style.height = `${viewportHeight * 0.5 - 100}px`;
-                        txtContent.style.height = `${viewportHeight * 0.5 - controlsHeight}px`;
                         console.log(`Expanded mode (portrait): viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight * 0.5 - controlsHeight}`);
                     }
                     controls.style.position = 'sticky';

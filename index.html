@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗 文字檔搜尋系統 v1.2.20</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.26</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
@@ -76,15 +76,15 @@
             flex-grow: 1;
             padding: 10px 0px 10px 20px;
             transition: height 0.3s;
+            max-height: 40vh; /* 限制高度，約 viewportHeight 的 40% */
         }
         .txt-content-section {
-            flex: 3;
+            flex: 1; /* 占滿剩餘空間 */
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             background-color: white;
             position: relative;
-            height: 100%;
             width: 100%;
         }
         .controls {
@@ -244,14 +244,16 @@
                 max-width: 100%;
                 border-right: none;
                 border-bottom: 1px solid #ccc;
-                height: 50vh;
+                height: auto; /* 自適應高度 */
+                min-height: 150px; /* 最小高度 */
             }
             .txt-content-section {
-                flex: 1;
-                height: 50vh;
+                flex: 1; /* 占滿剩餘空間 */
+                height: 100%; /* 確保占滿可用高度 */
             }
             .txt-list {
-                max-height: calc(50vh - 100px);
+                max-height: 40vh; /* 限制高度，約 viewportHeight 的 40% */
+                overflow-y: auto; /* 允許滾動 */
             }
             .input-section input {
                 font-size: 16px;
@@ -390,6 +392,7 @@
             const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
             const txtList = document.querySelector('.txt-list');
             const controls = document.querySelector('.controls');
+            const mainHeight = document.querySelector('main').clientHeight;
 
             if (window.innerWidth <= 768) {
                 if (isCollapsed) {
@@ -401,31 +404,36 @@
                     controls.style.top = '0';
                     const controlsHeight = controls.offsetHeight;
                     txtContent.style.height = `${viewportHeight - controlsHeight}px`;
+                    console.log(`Mobile collapsed: viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight - controlsHeight}`);
                 } else {
-                    resultsSection.style.height = `${viewportHeight * 0.5}px`;
+                    // 展開模式：讓 results-section 自適應內容高度
                     inputSection.style.display = 'block';
                     txtList.style.display = 'block';
-                    txtContentSection.style.height = `${viewportHeight * 0.5}px`;
+                    resultsSection.style.height = 'auto'; // 自適應高度
+                    txtContentSection.style.height = `${viewportHeight}px`; // 占滿視窗高度
                     controls.classList.remove('fixed');
                     controls.style.top = '0';
                     const controlsHeight = controls.offsetHeight;
-                    txtContent.style.height = `${viewportHeight * 0.5 - controlsHeight}px`;
+                    txtContent.style.height = `${viewportHeight - controlsHeight}px`; // 最大化 txt-content 高度
+                    console.log(`Mobile expanded: viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight - controlsHeight}`);
                 }
             } else {
-                resultsSection.style.height = 'auto';
+                resultsSection.style.height = `${mainHeight}px`;
                 inputSection.style.display = 'block';
                 txtList.style.display = 'block';
-                txtContentSection.style.height = 'auto';
-                txtContent.style.height = 'auto';
+                txtContentSection.style.height = `${mainHeight}px`;
                 controls.classList.remove('fixed');
+                const controlsHeight = controls.offsetHeight;
+                txtContent.style.height = `${mainHeight - controlsHeight}px`;
+                console.log(`Desktop: mainHeight=${mainHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${mainHeight - controlsHeight}`);
             }
             updateCollapseButtonVisibility();
         }
 
         window.addEventListener('resize', adjustLayout);
         window.addEventListener('orientationchange', adjustLayout);
-        window.addEventListener('scroll', adjustLayout); // 處理瀏覽器工具列隱藏/顯示
-        window.visualViewport?.addEventListener('resize', adjustLayout); // 監聽 visualViewport 變化
+        window.addEventListener('scroll', adjustLayout);
+        window.visualViewport?.addEventListener('resize', adjustLayout);
 
         const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
         const isDarkMode = localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && prefersDarkScheme.matches);
@@ -586,6 +594,7 @@
             if (selectedItem) {
                 selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
+            adjustLayout(); // 重新調整佈局以適應搜尋結果
         }
 
         function selectFile(itemElement, fileName, searchText, fileIndex, initialHighlightIndex) {
@@ -757,7 +766,7 @@
             const highlightPos = currentHighlights[currentIndex];
             let currentSentenceIndex = -1;
 
-            for (let i = 0; i <  sentenceCharPositions.length; i++) {
+            for (let i = 0; i < sentenceCharPositions.length; i++) {
                 if (highlightPos >= sentenceCharPositions[i] && (i === sentenceCharPositions.length - 1 || highlightPos < sentenceCharPositions[i + 1])) {
                     currentSentenceIndex = i;
                     break;

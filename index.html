@@ -251,7 +251,7 @@
             .txt-content {
                 height: calc(50vh - 60px);
             }
-            /* 橫放模式 */
+            /* 僅在手機橫放模式下優化 */
             @media (orientation: landscape) {
                 .results-section {
                     height: 50vh;
@@ -273,15 +273,6 @@
                 .input-section button {
                     padding: 5px 10px;
                     font-size: 12px;
-                }
-                .input-section #searchButton {
-                    content: "確定";
-                }
-                .input-section #langToggle {
-                    content: "簡";
-                }
-                .input-section #themeToggle {
-                    content: "淺";
                 }
                 .txt-list {
                     height: calc(50vh - 70px);
@@ -432,13 +423,14 @@
 
                     isSimplified = localStorage.getItem('isSimplified') === 'true';
                     if (isSimplified) {
-                        langToggle.textContent = '簡體模式';
+                        langToggle.textContent = '繁體模式';
                         applyLanguageConversion();
                     }
 
                     console.log('Initial txtContent content:', txtContent.innerHTML);
                     adjustLayout();
                     updateCollapseButtonVisibility();
+                    updateButtonText();
                 }
             }, 100);
         });
@@ -512,10 +504,12 @@
         window.addEventListener('resize', () => {
             adjustLayout();
             updateCollapseButtonVisibility();
+            updateButtonText();
         });
         window.addEventListener('orientationchange', () => {
             adjustLayout();
             updateCollapseButtonVisibility();
+            updateButtonText();
         });
 
         const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -540,7 +534,7 @@
 
         langToggle.addEventListener('click', () => {
             isSimplified = !isSimplified;
-            langToggle.textContent = isSimplified ? '簡體模式' : '簡體模式';
+            langToggle.textContent = isSimplified ? '繁體模式' : '簡體模式';
             localStorage.setItem('isSimplified', isSimplified);
             applyLanguageConversion();
             if (currentFileName && searchInput.value) {
@@ -559,6 +553,8 @@
                 if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
                     const text = el.getAttribute('placeholder');
                     el.setAttribute('placeholder', convertText(text));
+                } else if (el.id === 'themeToggle' || el.id === 'langToggle') {
+                    return;
                 } else {
                     const triangle = el.querySelector('.triangle');
                     const textContent = triangle ? el.childNodes[0].textContent : el.textContent;
@@ -582,6 +578,18 @@
             if (!text || typeof text !== 'string') return text;
             if (!converterToSimplified || !converterToTraditional) return text;
             return isSimplified ? converterToSimplified(text) : converterToTraditional(text);
+        }
+
+        function updateButtonText() {
+            if (window.innerWidth <= 768 && window.matchMedia("(orientation: landscape)").matches) {
+                searchButton.textContent = '確定';
+                themeToggle.textContent = '淺';
+                langToggle.textContent = '簡';
+            } else {
+                searchButton.textContent = '確定';
+                themeToggle.textContent = document.body.classList.contains('dark-mode') ? '淺色模式' : '深色模式';
+                langToggle.textContent = isSimplified ? '繁體模式' : '簡體模式';
+            }
         }
 
         searchInput.addEventListener('keypress', function(event) {

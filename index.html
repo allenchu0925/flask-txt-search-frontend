@@ -358,8 +358,8 @@
                 <input type="text" id="searchInput" placeholder="輸入文字，例如: 意識流">
                 <div class="button-group">
                     <button id="searchButton">確定</button>
-                    <button id="themeToggle">淺色模式</button>
-                    <button id="langToggle">簡體模式</button>
+                    <button id="themeToggle">淺色</button>
+                    <button id="langToggle">簡體</button>
                 </div>
             </div>
             <div class="txt-list" id="txtList">
@@ -423,7 +423,7 @@
 
                     isSimplified = localStorage.getItem('isSimplified') === 'true';
                     if (isSimplified) {
-                        langToggle.textContent = '繁體模式';
+                        langToggle.textContent = '繁體';
                         applyLanguageConversion();
                     }
 
@@ -516,25 +516,25 @@
         const isDarkMode = localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && prefersDarkScheme.matches);
         if (isDarkMode) {
             document.body.classList.add('dark-mode');
-            themeToggle.textContent = '淺色模式';
+            themeToggle.textContent = '淺色';
         }
         prefersDarkScheme.addEventListener('change', (e) => {
             if (!localStorage.getItem('darkMode')) {
                 document.body.classList.toggle('dark-mode', e.matches);
-                themeToggle.textContent = e.matches ? '淺色模式' : '深色模式';
+                themeToggle.textContent = e.matches ? '淺色' : '深色';
             }
         });
         themeToggle.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
             const darkModeEnabled = document.body.classList.contains('dark-mode');
-            themeToggle.textContent = darkModeEnabled ? '淺色模式' : '深色模式';
+            themeToggle.textContent = darkModeEnabled ? '淺色' : '深色';
             localStorage.setItem('darkMode', darkModeEnabled);
             applyLanguageConversion();
         });
 
         langToggle.addEventListener('click', () => {
             isSimplified = !isSimplified;
-            langToggle.textContent = isSimplified ? '繁體模式' : '簡體模式';
+            langToggle.textContent = isSimplified ? '繁體' : '簡體';
             localStorage.setItem('isSimplified', isSimplified);
             applyLanguageConversion();
             if (currentFileName && searchInput.value) {
@@ -587,8 +587,8 @@
                 langToggle.textContent = '簡';
             } else {
                 searchButton.textContent = '確定';
-                themeToggle.textContent = document.body.classList.contains('dark-mode') ? '淺色模式' : '深色模式';
-                langToggle.textContent = isSimplified ? '繁體模式' : '簡體模式';
+                themeToggle.textContent = document.body.classList.contains('dark-mode') ? '淺色' : '深色';
+                langToggle.textContent = isSimplified ? '繁體' : '簡體';
             }
         }
 

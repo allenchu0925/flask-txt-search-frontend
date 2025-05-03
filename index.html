@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大日宗 文字檔搜尋系統 v1.2.28</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.29</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
@@ -37,8 +37,6 @@
             padding: 20px;
             border-bottom: 1px solid #ccc;
             box-sizing: border-box;
-            height: auto;
-            min-height: 80px;
         }
         .input-section input {
             padding: 8px;
@@ -263,7 +261,6 @@
                 }
                 .input-section {
                     padding: 5px;
-                    min-height: 60px;
                 }
                 .input-section input {
                     padding: 5px;
@@ -287,7 +284,7 @@
                     content: "淺";
                 }
                 .txt-list {
-                    height: calc(50vh - 60px);
+                    height: calc(50vh - 70px);
                     min-height: 120px;
                 }
                 .txt-list div {
@@ -370,8 +367,8 @@
                 <input type="text" id="searchInput" placeholder="輸入文字，例如: 意識流">
                 <div class="button-group">
                     <button id="searchButton">確定</button>
-                    <button id="themeToggle">淺</button>
-                    <button id="langToggle">簡</button>
+                    <button id="themeToggle">淺色模式</button>
+                    <button id="langToggle">簡體模式</button>
                 </div>
             </div>
             <div class="txt-list" id="txtList">
@@ -435,7 +432,7 @@
 
                     isSimplified = localStorage.getItem('isSimplified') === 'true';
                     if (isSimplified) {
-                        langToggle.textContent = '繁';
+                        langToggle.textContent = '簡體模式';
                         applyLanguageConversion();
                     }
 
@@ -484,13 +481,13 @@
                     if (window.matchMedia("(orientation: landscape)").matches) {
                         resultsSection.style.height = `${viewportHeight * 0.5}px`;
                         txtContentSection.style.height = `${viewportHeight * 0.5}px`;
-                        txtList.style.height = `${viewportHeight * 0.5 - 60}px`;
-                        console.log(`Expanded mode (landscape): viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtListHeight=${viewportHeight * 0.5 - 60}`);
+                        txtList.style.height = `${viewportHeight * 0.5 - 70}px`;
+                        console.log(`Expanded mode (landscape): viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight * 0.5 - controlsHeight}`);
                     } else {
                         resultsSection.style.height = `${viewportHeight * 0.5}px`;
                         txtContentSection.style.height = `${viewportHeight * 0.5}px`;
                         txtList.style.height = `${viewportHeight * 0.5 - 100}px`;
-                        console.log(`Expanded mode (portrait): viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtListHeight=${viewportHeight * 0.5 - 100}`);
+                        console.log(`Expanded mode (portrait): viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight * 0.5 - controlsHeight}`);
                     }
                     controls.style.position = 'sticky';
                 }
@@ -525,25 +522,25 @@
         const isDarkMode = localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && prefersDarkScheme.matches);
         if (isDarkMode) {
             document.body.classList.add('dark-mode');
-            themeToggle.textContent = '淺';
+            themeToggle.textContent = '淺色模式';
         }
         prefersDarkScheme.addEventListener('change', (e) => {
             if (!localStorage.getItem('darkMode')) {
                 document.body.classList.toggle('dark-mode', e.matches);
-                themeToggle.textContent = e.matches ? '淺' : '深';
+                themeToggle.textContent = e.matches ? '淺色模式' : '深色模式';
             }
         });
         themeToggle.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
             const darkModeEnabled = document.body.classList.contains('dark-mode');
-            themeToggle.textContent = darkModeEnabled ? '淺' : '深';
+            themeToggle.textContent = darkModeEnabled ? '淺色模式' : '深色模式';
             localStorage.setItem('darkMode', darkModeEnabled);
             applyLanguageConversion();
         });
 
         langToggle.addEventListener('click', () => {
             isSimplified = !isSimplified;
-            langToggle.textContent = isSimplified ? '繁' : '簡';
+            langToggle.textContent = isSimplified ? '簡體模式' : '簡體模式';
             localStorage.setItem('isSimplified', isSimplified);
             applyLanguageConversion();
             if (currentFileName && searchInput.value) {

@@ -17,12 +17,16 @@
             background-color: #f9f9f9;
             height: 100vh;
             transition: background-color 0.3s, color 0.3s;
+            position: fixed;
+            width: 100%;
+            overflow: hidden;
         }
         main {
             display: block;
             height: 100vh;
             overflow: hidden;
             box-sizing: border-box;
+            position: relative;
         }
         .results-section {
             width: 30%;
@@ -32,11 +36,16 @@
             float: left;
             overflow: hidden;
             box-sizing: border-box;
+            position: relative;
         }
         .input-section {
             padding: 20px;
             border-bottom: 1px solid #ccc;
             box-sizing: border-box;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: inherit;
         }
         .input-section input {
             padding: 8px;
@@ -68,6 +77,7 @@
             padding: 10px 0px 10px 20px;
             height: calc(100% - 100px);
             box-sizing: border-box;
+			max-height: none;  /* 新增這行 */
         }
         .txt-content-section {
             width: 70%;
@@ -76,6 +86,7 @@
             height: 100%;
             overflow: hidden;
             box-sizing: border-box;
+            position: relative;
         }
         .controls {
             display: flex;
@@ -230,9 +241,31 @@
             vertical-align: middle;
         }
         @media (max-width: 768px) {
+            body {
+                position: fixed;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+            
             main {
-                display: flex;
-                flex-direction: column;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                overflow: hidden;
+            }
+            
+            .input-section {
+                position: sticky;
+                top: 0;
+                z-index: 1000;
+                background-color: #f9f9f9;
+            }
+            
+            body.dark-mode .input-section {
+                background-color: #1a1a1a;
             }
             .results-section {
                 width: 100%;
@@ -244,10 +277,11 @@
                 width: 100%;
                 height: 50vh;
             }
-            .txt-list {
-                height: calc(50vh - 100px);
-                min-height: 100px;
-            }
+    .txt-list {
+        height: calc(50vh ) !important;
+        min-height: 100px;
+        padding-bottom: 20px;
+    }
             .txt-content {
                 height: calc(50vh - 60px);
             }
@@ -325,13 +359,17 @@
                 top: 0;
                 width: 100%;
                 left: 0;
-                height: 60px;
+                z-index: 1000;
+                background-color: #f0f0f0;
             }
             .collapsed .txt-content-section {
                 height: calc(100vh - 60px);
+                margin-top: 60px;
             }
             .collapsed .txt-content {
                 height: calc(100vh - 60px);
+                padding-bottom: 80px;
+                -webkit-overflow-scrolling: touch;
             }
             /* 橫放模式下收起後調整 */
             @media (orientation: landscape) {
@@ -415,6 +453,54 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM fully loaded and parsed');
+            
+            // 觸控事件防護
+            let touchStartY = 0;
+            let touchStartX = 0;
+            let lastTouchEnd = 0;
+            
+            // 防止雙擊放大
+            document.addEventListener('touchend', (event) => {
+                const now = Date.now();
+                if (now - lastTouchEnd <= 300) {
+                    event.preventDefault();
+                }
+                lastTouchEnd = now;
+            });
+
+            // 防止整頁面上下滑動
+            document.body.addEventListener('touchstart', (e) => {
+                if (e.target.closest('.txt-content') || e.target.closest('.txt-list')) {
+                    return;
+                }
+                touchStartY = e.touches[0].clientY;
+                touchStartX = e.touches[0].clientX;
+            }, { passive: true });
+
+            document.body.addEventListener('touchmove', (e) => {
+                if (e.target.closest('.txt-content') || e.target.closest('.txt-list')) {
+                    return;
+                }
+                e.preventDefault();
+            }, { passive: false });
+
+            // 保護搜尋結果不被意外清除
+            txtContent.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+            }, { passive: true });
+
+            txtContent.addEventListener('touchmove', (e) => {
+                e.stopPropagation();
+            }, { passive: true });
+
+            // 防止意外重新整理
+            window.addEventListener('beforeunload', (e) => {
+                if (searchResults.length > 0) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+
             const waitForOpenCC = setInterval(() => {
                 if (typeof window.OpenCC !== 'undefined') {
                     clearInterval(waitForOpenCC);
@@ -455,61 +541,76 @@
             const controlsHeight = controls.offsetHeight || 60;
             const txtList = document.querySelector('.txt-list');
             const txtContent = document.querySelector('.txt-content');
+            const inputSectionHeight = inputSection.offsetHeight || 0;
 
             if (window.innerWidth <= 768) {
                 if (isCollapsed) {
                     inputSection.style.display = 'none';
                     txtList.style.display = 'none';
                     resultsSection.style.height = '0';
-                    txtContentSection.style.height = `${viewportHeight - controlsHeight}px`;
+                    txtContentSection.style.height = `${viewportHeight}px`;
                     controls.style.position = 'fixed';
                     controls.style.top = '0';
                     controls.style.width = '100%';
                     txtContent.style.height = `${viewportHeight - controlsHeight}px`;
-                    console.log(`Collapsed mode: viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight - controlsHeight}`);
+                    txtContent.style.paddingBottom = '80px';
                 } else {
                     inputSection.style.display = 'block';
                     txtList.style.display = 'block';
+                    const halfHeight = Math.floor(viewportHeight * 0.5);
+                    
                     if (window.matchMedia("(orientation: landscape)").matches) {
-                        resultsSection.style.height = `${viewportHeight * 0.5}px`;
-                        txtContentSection.style.height = `${viewportHeight * 0.5}px`;
-                        txtList.style.height = `${viewportHeight * 0.5 - 70}px`;
-                        console.log(`Expanded mode (landscape): viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight * 0.5 - controlsHeight}`);
+                        resultsSection.style.height = `${halfHeight}px`;
+                        txtContentSection.style.height = `${halfHeight}px`;
+                        txtList.style.height = `${halfHeight - inputSectionHeight}px`;
+                        txtContent.style.height = `${halfHeight - controlsHeight}px`;
                     } else {
-                        resultsSection.style.height = `${viewportHeight * 0.5}px`;
-                        txtContentSection.style.height = `${viewportHeight * 0.5}px`;
-                        txtList.style.height = `${viewportHeight * 0.5 - 100}px`;
-                        console.log(`Expanded mode (portrait): viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight * 0.5 - controlsHeight}`);
+                        resultsSection.style.height = `${halfHeight}px`;
+                        txtContentSection.style.height = `${halfHeight}px`;
+                        txtList.style.height = `${halfHeight - inputSectionHeight}px`;
+                        txtContent.style.height = `${halfHeight - controlsHeight}px`;
+                        txtContent.style.paddingBottom = '40px';
                     }
                     controls.style.position = 'sticky';
                 }
             } else {
+                // 桌面版保持不變
                 inputSection.style.display = 'block';
                 txtList.style.display = 'block';
                 resultsSection.style.height = '100%';
                 txtContentSection.style.height = '100%';
-                txtList.style.height = `${viewportHeight - 100}px`;
+                txtList.style.height = `calc(100% - ${inputSectionHeight}px)`;
                 controls.style.position = 'sticky';
-                txtContent.style.height = `${viewportHeight - controlsHeight}px`;
-                console.log(`Desktop mode: viewportHeight=${viewportHeight}, controlsHeight=${controlsHeight}, txtContentHeight=${viewportHeight - controlsHeight}`);
+                txtContent.style.height = `calc(100% - ${controlsHeight}px)`;
             }
 
-            console.log('After adjustLayout - txtContent styles:', {
-                display: txtContent.style.display,
-                height: txtContent.style.height,
-                computedHeight: window.getComputedStyle(txtContent).height
+            // 強制重新計算佈局
+            window.requestAnimationFrame(() => {
+                txtContent.style.display = 'none';
+                txtContent.offsetHeight; // 強制重繪
+                txtContent.style.display = '';
             });
         }
 
-        window.addEventListener('resize', () => {
-            adjustLayout();
-            updateCollapseButtonVisibility();
-            updateButtonText();
-        });
+        // 新增方向改變事件監聽器
         window.addEventListener('orientationchange', () => {
-            adjustLayout();
-            updateCollapseButtonVisibility();
-            updateButtonText();
+            // 等待方向改變完成後再調整佈局
+            setTimeout(() => {
+                adjustLayout();
+                updateCollapseButtonVisibility();
+                updateButtonText();
+            }, 150);
+        });
+
+        // 修改 resize 事件處理
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                adjustLayout();
+                updateCollapseButtonVisibility();
+                updateButtonText();
+            }, 100);
         });
 
         const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -600,11 +701,17 @@
         });
 
         searchButton.addEventListener('click', debounce(async () => {
-            console.log('Search button clicked');
             let input = searchInput.value.trim();
             if (!input) {
                 alert(convertText("請輸入要搜尋的文字。"));
                 return;
+            }
+
+            if (searchResults.length > 0) {
+                const confirmSearch = confirm(convertText("確定要執行新的搜尋嗎？這將清除當前的搜尋結果。"));
+                if (!confirmSearch) {
+                    return;
+                }
             }
 
             const searchTextForServer = (converterToTraditional && isSimplified) ? converterToTraditional(input) : input;
@@ -786,12 +893,10 @@
                 const traditionalSearchText = converterToTraditional ? converterToTraditional(escapedSearchText) : escapedSearchText;
                 const regex = new RegExp(`(${simplifiedSearchText}|${traditionalSearchText})`, 'gi');
                 htmlContent = htmlContent.replace(regex, '<span class="highlight">$1</span>');
-                console.log('Applied highlight regex - htmlContent (first 100 chars):', htmlContent.substring(0, 100) + '...');
             }
 
             const bracketRegex = /(?:（[^）]*）|\([^()]*\))/g;
             htmlContent = htmlContent.replace(bracketRegex, '<span class="bracket-content">$&</span>');
-            console.log('Applied bracket regex - htmlContent (first 100 chars):', htmlContent.substring(0, 100) + '...');
 
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlContent;
@@ -807,18 +912,23 @@
             });
 
             htmlContent = parts.join('');
-            console.log('Final htmlContent to be set (first 100 chars):', htmlContent.substring(0, 100) + '...');
-
             txtContent.innerHTML = htmlContent;
-            console.log('txtContent.innerHTML set - current innerHTML (first 100 chars):', txtContent.innerHTML.substring(0, 100) + '...');
-            console.log('txtContent child count:', txtContent.childNodes.length);
 
             const highlights = txtContent.getElementsByClassName('highlight');
-            console.log('Found highlights:', highlights.length, 'currentIndex:', currentIndex);
             if (highlights.length > 0 && currentIndex >= 0 && currentIndex < highlights.length) {
                 const focusedHighlight = highlights[currentIndex];
                 focusedHighlight.classList.add('focused');
-                console.log('Focused highlight set - element:', focusedHighlight);
+
+                // 為每個高亮添加觸控保護
+                Array.from(highlights).forEach(highlight => {
+                    highlight.addEventListener('touchstart', (e) => {
+                        e.stopPropagation();
+                    }, { passive: true });
+                    
+                    highlight.addEventListener('touchmove', (e) => {
+                        e.stopPropagation();
+                    }, { passive: true });
+                });
 
                 requestAnimationFrame(() => {
                     const paddingTop = parseFloat(window.getComputedStyle(txtContent).paddingTop) || 0;
@@ -833,8 +943,6 @@
                         top: adjustedScroll,
                         behavior: 'instant'
                     });
-                    console.log('Scrolled to highlight - offsetTop:', offsetTop, 'centerOffset:', centerOffset, 'adjustedScroll:', adjustedScroll);
-                    console.log('txtContent dimensions - scrollHeight:', txtContent.scrollHeight, 'clientHeight:', txtContent.clientHeight);
                 });
             }
 
@@ -954,6 +1062,7 @@
         txtContent.addEventListener('touchstart', (e) => {
             const target = e.target;
             if (target.classList.contains('highlight')) {
+                e.stopPropagation();
                 let touchTimer;
                 touchStartX = e.changedTouches[0].screenX;
                 touchTimer = setTimeout(() => {
@@ -974,7 +1083,7 @@
                     clearTimeout(touchTimer);
                 }, { once: true });
             }
-        });
+        }, { passive: true });
 
         copyButton.addEventListener('click', debounce(() => {
             if (!fullText) {

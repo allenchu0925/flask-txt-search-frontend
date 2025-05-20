@@ -381,35 +381,6 @@
                 }
             }
         }
-		.controls {
-    margin-top: 10px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    padding: 5px;
-    background-color: #f0f0f0;
-}
-
-.dark-theme .controls {
-    background-color: #2d2d2d;
-}
-
-#collapseButton {
-    order: 1;
-}
-
-#prevButton {
-    order: 2;
-}
-
-#nextButton {
-    order: 3;
-}
-
-.status {
-    order: 4;
-    margin-left: auto;
-}
         /* 清除浮動 */
         main::after {
             content: "";
@@ -433,12 +404,14 @@
                 <p style="padding-left: 0; color: #777;">請輸入文字後按確定進行搜尋。</p>
             </div>
         </section>
-<div class="controls">
-    <button id="collapseButton" style="display: none;">收起<span class="triangle">▲</span></button>
-    <button id="prevButton">向前</button>
-    <button id="nextButton">向後</button>
-    <span class="status" id="status">-/- (檔名)</span>
-</div>
+        <section class="txt-content-section">
+            <div class="controls">
+                <button id="collapseButton" style="display: none;">收起<span class="triangle">▲</span></button>
+                <button id="prevButton">向前</button>
+                <button id="nextButton">向後</button>
+		<button id="copyButton" style="display: none;">複製</button>
+                 <span class="status" id="status">-/- (檔名)</span>
+            </div>
             <div class="txt-content" id="txtContent">
                 <p style="color: #777;">請選擇左側的 TXT 檔案以顯示內容</p>
             </div>
@@ -1172,22 +1145,16 @@
             }, 100);
         }
 
- function updateCollapseButtonVisibility() {
-    const isMobile = window.innerWidth <= 768;
-    const isPortrait = window.matchMedia("(orientation: portrait)").matches;
-    if (isMobile && isPortrait && searchResults.length > 0) {
-        collapseButton.style.display = 'inline-flex';
-        // 確保按鈕順序正確
-        const controls = document.querySelector('.controls');
-        controls.style.display = 'flex';
-        controls.style.flexDirection = 'row';
-        controls.style.alignItems = 'center';
-        controls.style.gap = '10px';
-    } else {
-        collapseButton.style.display = 'none';
-        if (isCollapsed) toggleCollapse();
-    }
-}
+        function updateCollapseButtonVisibility() {
+            const isMobile = window.innerWidth <= 768;
+            const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+            if (isMobile && isPortrait && searchResults.length > 0) {
+                collapseButton.style.display = 'inline-flex';
+            } else {
+                collapseButton.style.display = 'none';
+                if (isCollapsed) toggleCollapse();
+            }
+        }
 
         collapseButton.addEventListener('click', debounce(toggleCollapse, 300));
     </script>

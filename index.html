@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>大日宗 文字檔搜尋系統 v1.2.35</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.33</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
         window.converterToTraditional = OpenCC.Converter({ from: 'cn', to: 'tw' });
     </script>
     <style>
-        /* --- 基礎與手機佈局修正 --- */
+        /* --- 基礎樣式 (保留所有配色與手機捲動修正) --- */
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f9f9f9; height: 100vh; transition: background-color 0.3s, color 0.3s; position: fixed; width: 100%; overflow: hidden; }
         main { display: block; height: 100vh; overflow: hidden; box-sizing: border-box; position: relative; }
         .results-section { width: 30%; border-right: 1px solid #ccc; display: block; height: 100%; float: left; overflow: hidden; box-sizing: border-box; position: relative; }
@@ -21,21 +21,9 @@
         .input-section #themeToggle, .input-section #langToggle { background-color: #0078d7; color: white; border: none; border-radius: 3px; }
         .txt-list { overflow-y: auto; padding: 10px 0px 10px 20px; height: calc(100% - 100px); box-sizing: border-box; max-height: none; padding-bottom: 120px; }
         .txt-content-section { width: 70%; float: right; background-color: white; height: 100%; overflow: hidden; box-sizing: border-box; position: relative; }
-        
-        .controls { 
-            display: flex; align-items: center; padding: 10px 15px; background-color: #f0f0f0; 
-            border-bottom: 1px solid #ccc; position: sticky; top: 0; z-index: 1; box-sizing: border-box; height: 60px; 
-            overflow-x: auto; /* 若按鈕真的太多，允許橫向滑動而不擠壓 */
-        }
-        .status { font-size: 13px; color: #333; margin-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; }
-        
-        .controls button { 
-            padding: 8px 12px; color: white; background-color: #0078d7; border: none; cursor: pointer; 
-            margin-right: 8px; border-radius: 3px; display: inline-flex; align-items: center; 
-            font-size: 14px; white-space: nowrap; /* 核心：防止文字換行 */
-            flex-shrink: 0; 
-        }
-
+        .controls { display: flex; align-items: center; padding: 10px 20px; background-color: #f0f0f0; border-bottom: 1px solid #ccc; position: sticky; top: 0; z-index: 1; box-sizing: border-box; height: 60px; }
+        .status { font-size: 14px; color: #333; margin-left: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .controls button { padding: 8px 15px; color: white; background-color: #0078d7; border: none; cursor: pointer; margin-right: 10px; border-radius: 3px; display: inline-flex; align-items: center; }
         .txt-content { padding: 20px; background-color: white; overflow-y: auto; font-size: 16px; line-height: 1.6; transition: background-color 0.3s; white-space: pre-wrap; box-sizing: border-box; height: calc(100% - 60px); }
         .highlight { background-color: yellow; padding: 0px 2px; border-radius: 2px; color: black; }
         .highlight.focused { background-color: #ffeb3b; font-weight: bold; }
@@ -43,15 +31,19 @@
         .txt-list div { padding: 10px 15px 10px 0px; cursor: pointer; border-bottom: 1px solid #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .txt-list div.selected { background-color: #add8e6; font-weight: bold; color: #005a9e; }
 
-        /* 深色模式樣式 (保持優化色彩) */
+        /* 深色模式修正 */
         body.dark-mode { background-color: #1a1a1a; color: #ffffff; }
+        body.dark-mode .results-section { border-right: 1px solid #444; }
+        body.dark-mode .input-section { border-bottom: 1px solid #444; }
         body.dark-mode .txt-content-section, body.dark-mode .txt-content { background-color: #2d2d2d; color: #ffffff; }
         body.dark-mode .controls { background-color: #333; border-bottom: 1px solid #444; }
         body.dark-mode .status { color: #ccc; }
-        body.dark-mode .bracket-content { color: #66b3ff; }
+        body.dark-mode .txt-list div { border-bottom: 1px solid #444; }
+        body.dark-mode .txt-list div.selected { background-color: #4682b4; color: #ffffff; }
         body.dark-mode .highlight { background-color: #666600; color: white; }
+        body.dark-mode .bracket-content { color: #66b3ff; }
 
-        /* 手機版修正：解決捲不到底部的 Bug */
+        /* 手機版佈局：解決捲動到底部被擋住的問題 */
         @media (max-width: 768px) {
             body { position: fixed; width: 100%; height: 100dvh; overflow: hidden; }
             main { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; height: 100dvh; }
@@ -73,7 +65,7 @@
     <main>
         <section class="results-section">
             <div class="input-section">
-                <input type="text" id="searchInput" placeholder="輸入文字">
+                <input type="text" id="searchInput" placeholder="輸入文字，例如: 意識流">
                 <div class="button-group">
                     <button id="searchButton">確定</button>
                     <button id="themeToggle">...</button>
@@ -104,7 +96,6 @@
         const txtContent = document.getElementById('txtContent');
         const prevButton = document.getElementById('prevButton');
         const nextButton = document.getElementById('nextButton');
-        const copyButton = document.getElementById('copyButton');
         const status = document.getElementById('status');
         const searchInput = document.getElementById('searchInput');
         const themeToggle = document.getElementById('themeToggle');
@@ -130,9 +121,14 @@
         let isSimplified = false;
 
         document.addEventListener('DOMContentLoaded', () => {
+            // --- 核心修正：初始化深色模式與按鈕文字 ---
             const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
             const savedDarkMode = localStorage.getItem('darkMode');
-            if (savedDarkMode === 'true' || (savedDarkMode === null && prefersDarkScheme.matches)) {
+            
+            // 判斷是否應該啟動深色模式
+            const shouldBeDark = savedDarkMode === 'true' || (savedDarkMode === null && prefersDarkScheme.matches);
+            
+            if (shouldBeDark) {
                 document.body.classList.add('dark-mode');
             }
 
@@ -141,9 +137,13 @@
                     clearInterval(waitForOpenCC);
                     converterToSimplified = window.converterToSimplified;
                     converterToTraditional = window.converterToTraditional;
+                    
                     isSimplified = localStorage.getItem('isSimplified') === 'true';
                     langToggle.textContent = isSimplified ? '繁體' : '簡體';
+                    
+                    // 同步主題按鈕文字：如果是深色模式，按鈕文字應為「淺色」
                     updateThemeButtonText();
+                    
                     if (isSimplified) applyLanguageConversion();
                     adjustLayout();
                     updateCollapseButtonVisibility();
@@ -151,6 +151,7 @@
             }, 100);
         });
 
+        // 抽取出來的按鈕文字更新函式
         function updateThemeButtonText() {
             const isDark = document.body.classList.contains('dark-mode');
             themeToggle.textContent = convertText(isDark ? '淺色' : '深色');
@@ -176,8 +177,9 @@
 
         themeToggle.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
-            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
-            updateThemeButtonText();
+            const darkModeEnabled = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', darkModeEnabled);
+            updateThemeButtonText(); // 點擊後同步更新
         });
 
         langToggle.addEventListener('click', () => {
@@ -185,8 +187,10 @@
             langToggle.textContent = isSimplified ? '繁體' : '簡體';
             localStorage.setItem('isSimplified', isSimplified);
             applyLanguageConversion();
-            updateThemeButtonText();
-            if (currentFileName && searchInput.value) loadTXTContent(currentFileName, searchInput.value, currentIndex);
+            updateThemeButtonText(); // 語系切換時也同步一下文字
+            if (currentFileName && searchInput.value) {
+                loadTXTContent(currentFileName, searchInput.value, currentIndex);
+            }
             if (searchResults.length > 0) renderSearchResults(searchInput.value);
         });
 
@@ -194,10 +198,13 @@
             if (!converterToSimplified || !converterToTraditional) return;
             document.querySelectorAll('p:not(.dynamic), button, input[placeholder], .status').forEach(el => {
                 if (el.tagName === 'INPUT') el.setAttribute('placeholder', convertText(el.getAttribute('placeholder')));
-                else if (el.id !== 'langToggle' && el.id !== 'themeToggle') {
+                else if (el.id !== 'langToggle') { // themeToggle 現在交給 updateThemeButtonText 處理
                     const triangle = el.querySelector('.triangle');
-                    if (triangle) el.childNodes[0].textContent = convertText(el.childNodes[0].textContent);
-                    else el.textContent = convertText(el.textContent);
+                    if (triangle) {
+                        el.childNodes[0].textContent = convertText(el.childNodes[0].textContent);
+                    } else if (el.id !== 'themeToggle') {
+                        el.textContent = convertText(el.textContent);
+                    }
                 }
             });
         }
@@ -259,7 +266,6 @@
                     while ((match = regex.exec(fullText)) !== null) currentHighlights.push(match.index);
                     currentIndex = initialIdx;
                     updateContent(searchText);
-                    copyButton.style.display = 'inline-flex';
                 });
         }
 
@@ -282,33 +288,6 @@
             const name = currentFileName.replace('.txt','');
             status.textContent = `${currentHighlights.length > 0 ? currentIndex + 1 : 0}/${currentHighlights.length} (${name})`;
         }
-
-        /* --- 修改：合併後的複製邏輯 (全本富文本複製) --- */
-        async function copyStyledText() {
-            if (!fullText) return;
-
-            // 將括號內容包裝成帶有行內樣式 (Inline Style) 的 HTML，貼上時才會帶顏色
-            const htmlContent = fullText
-                .replace(/[&<>"']/g, m => ({'&':'&','<':'<','>':'>','"':'"','\'':'\''}[m]))
-                .replace(/\n/g, '<br>')
-                .replace(/(?:（[^）]*）|\([^()]*\))/g, '<span style="color: #0078d7; font-weight: bold;">$&</span>');
-
-            const blobHtml = new Blob([htmlContent], { type: 'text/html' });
-            const blobText = new Blob([fullText], { type: 'text/plain' });
-            
-            try {
-                // 使用 ClipboardItem 同時寫入 HTML 和純文字
-                const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
-                await navigator.clipboard.write(data);
-                alert(convertText("已複製全本（含藍色括號樣式）"));
-            } catch (err) {
-                // 如果瀏覽器或軟體不支援 HTML 複製，則退回到純文字複製
-                navigator.clipboard.writeText(fullText);
-                alert(convertText("已複製純文字內容"));
-            }
-        }
-
-        copyButton.addEventListener('click', copyStyledText);
 
         prevButton.addEventListener('click', () => {
             if (currentIndex > 0) { currentIndex--; updateContent(searchInput.value); }

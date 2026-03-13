@@ -1,16 +1,16 @@
-DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>大日宗 文字檔搜尋系統 v1.2.34</title>
+    <title>大日宗 文字檔搜尋系統 v1.2.35</title>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
     <script>
         window.converterToSimplified = OpenCC.Converter({ from: 'tw', to: 'cn' });
         window.converterToTraditional = OpenCC.Converter({ from: 'cn', to: 'tw' });
     </script>
     <style>
-        /* --- 基礎樣式與手機修正 --- */
+        /* --- 基礎與手機佈局修正 --- */
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f9f9f9; height: 100vh; transition: background-color 0.3s, color 0.3s; position: fixed; width: 100%; overflow: hidden; }
         main { display: block; height: 100vh; overflow: hidden; box-sizing: border-box; position: relative; }
         .results-section { width: 30%; border-right: 1px solid #ccc; display: block; height: 100%; float: left; overflow: hidden; box-sizing: border-box; position: relative; }
@@ -21,9 +21,21 @@ DOCTYPE html>
         .input-section #themeToggle, .input-section #langToggle { background-color: #0078d7; color: white; border: none; border-radius: 3px; }
         .txt-list { overflow-y: auto; padding: 10px 0px 10px 20px; height: calc(100% - 100px); box-sizing: border-box; max-height: none; padding-bottom: 120px; }
         .txt-content-section { width: 70%; float: right; background-color: white; height: 100%; overflow: hidden; box-sizing: border-box; position: relative; }
-        .controls { display: flex; align-items: center; padding: 10px 20px; background-color: #f0f0f0; border-bottom: 1px solid #ccc; position: sticky; top: 0; z-index: 1; box-sizing: border-box; height: 60px; }
-        .status { font-size: 14px; color: #333; margin-left: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .controls button { padding: 8px 12px; color: white; background-color: #0078d7; border: none; cursor: pointer; margin-right: 8px; border-radius: 3px; display: inline-flex; align-items: center; font-size: 14px; }
+        
+        .controls { 
+            display: flex; align-items: center; padding: 10px 15px; background-color: #f0f0f0; 
+            border-bottom: 1px solid #ccc; position: sticky; top: 0; z-index: 1; box-sizing: border-box; height: 60px; 
+            overflow-x: auto; /* 若按鈕真的太多，允許橫向滑動而不擠壓 */
+        }
+        .status { font-size: 13px; color: #333; margin-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; }
+        
+        .controls button { 
+            padding: 8px 12px; color: white; background-color: #0078d7; border: none; cursor: pointer; 
+            margin-right: 8px; border-radius: 3px; display: inline-flex; align-items: center; 
+            font-size: 14px; white-space: nowrap; /* 核心：防止文字換行 */
+            flex-shrink: 0; 
+        }
+
         .txt-content { padding: 20px; background-color: white; overflow-y: auto; font-size: 16px; line-height: 1.6; transition: background-color 0.3s; white-space: pre-wrap; box-sizing: border-box; height: calc(100% - 60px); }
         .highlight { background-color: yellow; padding: 0px 2px; border-radius: 2px; color: black; }
         .highlight.focused { background-color: #ffeb3b; font-weight: bold; }
@@ -31,16 +43,18 @@ DOCTYPE html>
         .txt-list div { padding: 10px 15px 10px 0px; cursor: pointer; border-bottom: 1px solid #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .txt-list div.selected { background-color: #add8e6; font-weight: bold; color: #005a9e; }
 
-        /* 深色模式修正 */
+        /* 深色模式樣式 (保持優化色彩) */
         body.dark-mode { background-color: #1a1a1a; color: #ffffff; }
         body.dark-mode .txt-content-section, body.dark-mode .txt-content { background-color: #2d2d2d; color: #ffffff; }
         body.dark-mode .controls { background-color: #333; border-bottom: 1px solid #444; }
+        body.dark-mode .status { color: #ccc; }
         body.dark-mode .bracket-content { color: #66b3ff; }
         body.dark-mode .highlight { background-color: #666600; color: white; }
 
+        /* 手機版修正：解決捲不到底部的 Bug */
         @media (max-width: 768px) {
-            body { height: 100dvh; }
-            main { display: flex; flex-direction: column; height: 100dvh; }
+            body { position: fixed; width: 100%; height: 100dvh; overflow: hidden; }
+            main { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; height: 100dvh; }
             .results-section { width: 100%; height: 45dvh; float: none; display: flex; flex-direction: column; border-bottom: 1px solid #ccc; }
             .txt-list { flex: 1; height: auto !important; padding-bottom: 150px !important; -webkit-overflow-scrolling: touch; }
             .txt-content-section { width: 100%; height: 55dvh; float: none; display: flex; flex-direction: column; }
@@ -48,7 +62,7 @@ DOCTYPE html>
             .collapsed .results-section { height: 0; display: none; }
             .collapsed .txt-content-section { height: 100dvh; }
             .collapsed .controls { position: fixed; top: 0; width: 100%; z-index: 1000; }
-            .collapsed .txt-content { margin-top: 60px; padding-bottom: 150px !important; }
+            .collapsed .txt-content { margin-top: 60px; height: calc(100dvh - 60px) !important; padding-bottom: 150px !important; }
         }
 
         .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #ccc; border-top: 2px solid #0078d7; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 5px; vertical-align: middle; }
@@ -75,8 +89,7 @@ DOCTYPE html>
                 <button id="collapseButton" style="display: none;">收起<span class="triangle">▲</span></button>
                 <button id="prevButton">向前</button>
                 <button id="nextButton">向後</button>
-                <button id="copyFullButton" style="display: none;">複製全本</button>
-                <button id="copyButton" style="display: none;">複製局部</button>
+                <button id="copyButton" style="display: none;">複製</button>
                  <span class="status" id="status">-/- (檔名)</span>
             </div>
             <div class="txt-content" id="txtContent">
@@ -92,7 +105,6 @@ DOCTYPE html>
         const prevButton = document.getElementById('prevButton');
         const nextButton = document.getElementById('nextButton');
         const copyButton = document.getElementById('copyButton');
-        const copyFullButton = document.getElementById('copyFullButton');
         const status = document.getElementById('status');
         const searchInput = document.getElementById('searchInput');
         const themeToggle = document.getElementById('themeToggle');
@@ -247,7 +259,6 @@ DOCTYPE html>
                     while ((match = regex.exec(fullText)) !== null) currentHighlights.push(match.index);
                     currentIndex = initialIdx;
                     updateContent(searchText);
-                    copyFullButton.style.display = 'inline-flex';
                     copyButton.style.display = 'inline-flex';
                 });
         }
@@ -272,38 +283,32 @@ DOCTYPE html>
             status.textContent = `${currentHighlights.length > 0 ? currentIndex + 1 : 0}/${currentHighlights.length} (${name})`;
         }
 
-        /* --- 核心：富文本複製邏輯 --- */
-        async function copyStyledText(isFull = false) {
-            const textToCopy = isFull ? fullText : getContextAroundHighlight();
-            if (!textToCopy) return;
+        /* --- 修改：合併後的複製邏輯 (全本富文本複製) --- */
+        async function copyStyledText() {
+            if (!fullText) return;
 
-            // 將換行轉為 <br> 並將括號包裝成藍色 style
-            const htmlContent = textToCopy
+            // 將括號內容包裝成帶有行內樣式 (Inline Style) 的 HTML，貼上時才會帶顏色
+            const htmlContent = fullText
                 .replace(/[&<>"']/g, m => ({'&':'&','<':'<','>':'>','"':'"','\'':'\''}[m]))
                 .replace(/\n/g, '<br>')
                 .replace(/(?:（[^）]*）|\([^()]*\))/g, '<span style="color: #0078d7; font-weight: bold;">$&</span>');
 
             const blobHtml = new Blob([htmlContent], { type: 'text/html' });
-            const blobText = new Blob([textToCopy], { type: 'text/plain' });
-            const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
-
+            const blobText = new Blob([fullText], { type: 'text/plain' });
+            
             try {
+                // 使用 ClipboardItem 同時寫入 HTML 和純文字
+                const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
                 await navigator.clipboard.write(data);
-                alert(convertText(isFull ? "已複製全本（含藍色括號樣式）" : "已複製局部（含藍色括號樣式）"));
+                alert(convertText("已複製全本（含藍色括號樣式）"));
             } catch (err) {
-                // 退回純文字複製
-                navigator.clipboard.writeText(textToCopy);
-                alert(convertText("已複製純文字（此軟體不支援帶顏色複製）"));
+                // 如果瀏覽器或軟體不支援 HTML 複製，則退回到純文字複製
+                navigator.clipboard.writeText(fullText);
+                alert(convertText("已複製純文字內容"));
             }
         }
 
-        function getContextAroundHighlight() {
-            // 保留你原本的 getContextAroundHighlight 邏輯
-            return fullText; // 簡化示意，實際應套用你之前的切割邏輯
-        }
-
-        copyFullButton.addEventListener('click', () => copyStyledText(true));
-        copyButton.addEventListener('click', () => copyStyledText(false));
+        copyButton.addEventListener('click', copyStyledText);
 
         prevButton.addEventListener('click', () => {
             if (currentIndex > 0) { currentIndex--; updateContent(searchInput.value); }
